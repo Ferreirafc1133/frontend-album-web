@@ -9,9 +9,8 @@ export function meta({}: Route.MetaArgs) {
 
 export default function CreateAlbum() {
   return (
-    <main className="pt-16 p-8 container mx-auto">
+    <main className="p-8 container mx-auto">
       <h1 className="text-3xl font-semibold text-gray-800">Crear álbum</h1>
     </main>
   );
 }
-

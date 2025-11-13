@@ -10,17 +10,6 @@ export function meta({}: Route.MetaArgs) {
 export default function Sticker() {
   return (
     <div className="bg-gray-100 font-sans min-h-screen flex flex-col">
-      <nav className="bg-white shadow-md py-4 px-8 flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-blue-600">BadgeUp</h1>
-        <ul className="flex space-x-6 text-gray-700 font-medium">
-          <li><a href="#" className="hover:text-blue-600">Inicio</a></li>
-          <li><a href="#" className="hover:text-blue-600">Mis Álbumes</a></li>
-          <li><a href="#" className="hover:text-blue-600">Ranking</a></li>
-          <li><a href="#" className="hover:text-blue-600">Amigos</a></li>
-          <li><a href="#" className="hover:text-blue-600">Notificaciones</a></li>
-        </ul>
-      </nav>
-
       <main className="flex-1 p-10 max-w-5xl mx-auto">
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col md:flex-row">
           <div className="md:w-1/2 bg-gray-50 flex items-center justify-center">
@@ -61,4 +50,3 @@ export default function Sticker() {
     </div>
   );
 }
-

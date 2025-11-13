@@ -10,27 +10,6 @@ export function meta({}: Route.MetaArgs) {
 export default function Profile() {
   return (
     <div className="bg-gray-100 font-sans min-h-screen flex flex-col">
-      <nav className="bg-white shadow-md py-4 px-8 flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-blue-600">BadgeUp</h1>
-        <ul className="flex space-x-6 text-gray-700 font-medium">
-          <li>
-            <a href="#" className="hover:text-blue-600">Inicio</a>
-          </li>
-          <li>
-            <a href="#" className="hover:text-blue-600">Álbumes</a>
-          </li>
-          <li>
-            <a href="#" className="hover:text-blue-600">Ranking</a>
-          </li>
-          <li>
-            <a href="#" className="hover:text-blue-600">Amigos</a>
-          </li>
-          <li>
-            <a href="#" className="text-blue-600 border-b-2 border-blue-600 pb-1">Perfil</a>
-          </li>
-        </ul>
-      </nav>
-
       <main className="flex-1 p-10 max-w-6xl mx-auto">
         <div className="bg-white rounded-xl shadow-md p-8 flex flex-col md:flex-row items-center justify-between">
           <div className="flex items-center space-x-8">
@@ -130,4 +109,3 @@ export default function Profile() {
     </div>
   );
 }
-

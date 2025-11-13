@@ -10,17 +10,6 @@ export function meta({}: Route.MetaArgs) {
 export default function Amigos() {
   return (
     <div className="bg-gray-100 font-sans min-h-screen flex flex-col">
-      <nav className="bg-white shadow-md py-4 px-8 flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-blue-600">BadgeUp</h1>
-        <ul className="flex space-x-6 text-gray-700 font-medium">
-          <li><a href="#" className="hover:text-blue-600">Inicio</a></li>
-          <li><a href="#" className="hover:text-blue-600">Álbumes</a></li>
-          <li><a href="#" className="hover:text-blue-600">Ranking</a></li>
-          <li><a href="#" className="text-blue-600 border-b-2 border-blue-600 pb-1">Amigos</a></li>
-          <li><a href="#" className="hover:text-blue-600">Perfil</a></li>
-        </ul>
-      </nav>
-
       <main className="flex-1 p-10">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-3xl font-semibold text-gray-800">Tus Amigos</h2>
@@ -61,4 +50,3 @@ export default function Amigos() {
     </div>
   );
 }
-

@@ -1,3 +1,5 @@
+import { Link } from "react-router";
+
 type Album = {
   id?: string | number;
   cover: string;
@@ -14,9 +16,14 @@ export default function AlbumCard({ album }: { album: Album }) {
         {album.progress ? (
           <p className="text-sm text-gray-500 mb-3">{album.progress}</p>
         ) : null}
-        <button className="bg-blue-600 text-white w-full py-2 rounded-lg hover:bg-blue-700">Ver álbum</button>
+        {album.id !== undefined ? (
+          <Link to={`/albums/${album.id}`} className="block text-center bg-blue-600 text-white w-full py-2 rounded-lg hover:bg-blue-700">
+            Ver álbum
+          </Link>
+        ) : (
+          <div className="bg-blue-600 text-white w-full py-2 rounded-lg text-center">Ver álbum</div>
+        )}
       </div>
     </div>
   );
 }
-
