@@ -16,4 +16,5 @@ export default [
   route("/ranking", "routes/ranking.tsx"),
   route("/registro", "routes/registro.tsx"),
   route("/sticker", "routes/sticker.tsx"),
+  route("/stickers/:sid", "routes/stickers.$sid.tsx"),
 ] satisfies RouteConfig;

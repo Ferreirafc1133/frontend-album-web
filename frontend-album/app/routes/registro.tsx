@@ -1,4 +1,10 @@
 import type { Route } from "./+types/registro";
+import { useState } from "react";
+import type { FormEvent } from "react";
+import { useNavigate } from "react-router";
+import { AuthAPI } from "../services/api";
+import { useToast } from "../ui/ToastProvider";
+import { useUserStore } from "../store/useUserStore";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -8,6 +14,22 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Registro() {
+  const [nombre, setNombre] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const { success, error } = useToast();
+  const { setUser } = useUserStore();
+  const navigate = useNavigate();
+
+  const onSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!nombre.trim() || !email.trim()) { error("Completa los datos"); return; }
+    const user = await AuthAPI.register(nombre.trim(), email.trim(), password);
+    setUser(user);
+    success("Cuenta creada");
+    navigate("/profile");
+  };
+
   return (
     <div className="flex h-screen bg-gray-100 font-sans">
       <div className="hidden md:flex w-1/2 relative items-center justify-center overflow-hidden">
@@ -63,18 +85,18 @@ export default function Registro() {
             <div className="flex-1 h-px bg-gray-300" />
           </div>
 
-          <form className="space-y-5">
+          <form className="space-y-5" onSubmit={onSubmit}>
             <div>
               <label className="block text-gray-700 mb-2" htmlFor="nombre">Nombre completo</label>
-              <input id="nombre" type="text" placeholder="Tu nombre completo" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input id="nombre" type="text" placeholder="Tu nombre completo" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" value={nombre} onChange={(e) => setNombre(e.target.value)} />
             </div>
             <div>
               <label className="block text-gray-700 mb-2" htmlFor="email">Correo electrónico</label>
-              <input id="email" type="email" placeholder="ejemplo@correo.com" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input id="email" type="email" placeholder="ejemplo@correo.com" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div>
               <label className="block text-gray-700 mb-2" htmlFor="password">Contraseña</label>
-              <input id="password" type="password" placeholder="********" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input id="password" type="password" placeholder="********" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
             <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition">Crear cuenta</button>
           </form>
@@ -88,4 +110,3 @@ export default function Registro() {
     </div>
   );
 }
-

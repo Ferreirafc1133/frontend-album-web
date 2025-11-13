@@ -1,5 +1,5 @@
 import type { Route } from "./+types/albums.$id";
-import { useLoaderData, useRevalidator, useNavigate } from "react-router";
+import { useLoaderData, useRevalidator, useNavigate, Link } from "react-router";
 import { AlbumsAPI, type Album } from "../services/api";
 import { useToast } from "../ui/ToastProvider";
 import { useConfirm } from "../ui/ConfirmProvider";
@@ -53,16 +53,12 @@ export default function AlbumDetail() {
         <h3 className="text-2xl font-semibold text-gray-800 mb-6">Tu progreso</h3>
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-          <div className="flex flex-col items-center">
+          <Link to="/stickers/1" className="flex flex-col items-center">
             <div className="w-28 h-28 bg-white rounded-lg shadow-md flex items-center justify-center border-4 border-green-500">
-              <img
-                src="https://cdn-icons-png.flaticon.com/512/741/741407.png"
-                alt="Sticker"
-                className="w-14"
-              />
+              <img src="https://cdn-icons-png.flaticon.com/512/741/741407.png" alt="Sticker" className="w-14" />
             </div>
             <p className="mt-2 text-gray-700 text-sm font-medium">Camaro 1969</p>
-          </div>
+          </Link>
 
           <div className="flex flex-col items-center">
             <div className="w-28 h-28 bg-gray-200 rounded-lg shadow-inner flex items-center justify-center">
@@ -78,16 +74,12 @@ export default function AlbumDetail() {
             <p className="mt-2 text-gray-400 text-sm font-medium">Desbloquear...</p>
           </div>
 
-          <div className="flex flex-col items-center">
+          <Link to="/stickers/2" className="flex flex-col items-center">
             <div className="w-28 h-28 bg-white rounded-lg shadow-md flex items-center justify-center border-4 border-green-500">
-              <img
-                src="https://cdn-icons-png.flaticon.com/512/201/201623.png"
-                alt="Sticker"
-                className="w-14"
-              />
+              <img src="https://cdn-icons-png.flaticon.com/512/201/201623.png" alt="Sticker" className="w-14" />
             </div>
             <p className="mt-2 text-gray-700 text-sm font-medium">Mustang GT</p>
-          </div>
+          </Link>
 
           <div className="flex flex-col items-center">
             <div className="w-28 h-28 bg-gray-200 rounded-lg shadow-inner flex items-center justify-center">

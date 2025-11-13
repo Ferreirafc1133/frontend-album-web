@@ -109,6 +109,10 @@ export const AuthAPI = {
     currentUser = { id: "u1", name: "Fernando", email };
     return delay(currentUser);
   },
+  register: async (name: string, email: string, password: string): Promise<User> => {
+    currentUser = { id: String(Date.now()), name, email };
+    return delay(currentUser);
+  },
   logout: async (): Promise<boolean> => {
     currentUser = null;
     return delay(true);

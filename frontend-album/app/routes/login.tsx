@@ -1,4 +1,10 @@
 import type { Route } from "./+types/login";
+import { useState } from "react";
+import type { FormEvent } from "react";
+import { useNavigate } from "react-router";
+import { AuthAPI } from "../services/api";
+import { useToast } from "../ui/ToastProvider";
+import { useUserStore } from "../store/useUserStore";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -8,6 +14,21 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const { success, error } = useToast();
+  const { setUser } = useUserStore();
+  const navigate = useNavigate();
+
+  const onSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) { error("Correo requerido"); return; }
+    const user = await AuthAPI.login(email, password);
+    setUser(user);
+    success("Sesión iniciada");
+    navigate("/");
+  };
+
   return (
     <div className="flex h-screen bg-gray-100 font-sans">
       <div className="hidden md:flex w-1/2 bg-gradient-to-br from-blue-600 to-blue-800 text-white flex-col justify-center items-center p-10">
@@ -76,7 +97,7 @@ export default function Login() {
             <div className="flex-1 h-px bg-gray-300" />
           </div>
 
-          <form className="space-y-5">
+          <form className="space-y-5" onSubmit={onSubmit}>
             <div>
               <label className="block text-gray-700 mb-2" htmlFor="email">
                 Correo electrónico
@@ -86,6 +107,8 @@ export default function Login() {
                 type="email"
                 placeholder="ejemplo@correo.com"
                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
 
@@ -98,6 +121,8 @@ export default function Login() {
                 type="password"
                 placeholder="********"
                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
 
@@ -111,12 +136,7 @@ export default function Login() {
               </a>
             </div>
 
-            <button
-              type="submit"
-              className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition"
-            >
-              Entrar
-            </button>
+            <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition">Entrar</button>
 
             <p className="text-center text-sm text-gray-500 mt-6">
               ¿No tienes cuenta?{' '}
@@ -130,4 +150,3 @@ export default function Login() {
     </div>
   );
 }
-
