@@ -1,4 +1,8 @@
 import type { Route } from "./+types/albums.$id";
+import { useLoaderData, useRevalidator, useNavigate } from "react-router";
+import { AlbumsAPI, type Album } from "../services/api";
+import { useToast } from "../ui/ToastProvider";
+import { useConfirm } from "../ui/ConfirmProvider";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -7,13 +11,40 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
+export async function loader({ params }: Route.LoaderArgs) {
+  const id = params.id as string;
+  const album = await AlbumsAPI.get(id);
+  return { album, id };
+}
+
 export default function AlbumDetail() {
+  const { album, id } = useLoaderData<typeof loader>() as { album?: Album; id: string };
+  const { success } = useToast();
+  const { confirm } = useConfirm();
+  const revalidator = useRevalidator();
+  const navigate = useNavigate();
+
   return (
     <div className="bg-gray-100 font-sans min-h-screen flex flex-col">
       <header className="bg-blue-600 text-white py-10 px-8 text-center shadow-md">
-        <h2 className="text-3xl font-bold mb-2">Autos Clásicos</h2>
-        <p className="text-blue-100">12/40 stickers desbloqueados</p>
-        <button className="mt-4 bg-white text-blue-700 font-semibold px-6 py-2 rounded-lg hover:bg-blue-100 transition">
+        <h2 className="text-3xl font-bold mb-2">{album?.title || "Álbum"}</h2>
+        <p className="text-blue-100">{album?.progress || "0/0"} stickers desbloqueados</p>
+        <button
+          className="mt-4 bg-white text-blue-700 font-semibold px-6 py-2 rounded-lg hover:bg-blue-100 transition"
+          onClick={async () => {
+            const ok = await confirm({
+              title: "Capturar sticker",
+              description: "Deseas capturar un nuevo sticker",
+              confirmText: "Capturar",
+              cancelText: "No",
+            });
+            if (!ok) return;
+            await AlbumsAPI.captureSticker(id);
+            success("Sticker capturado");
+            revalidator.revalidate();
+            navigate("/desbloqueo");
+          }}
+        >
           Capturar Sticker
         </button>
       </header>

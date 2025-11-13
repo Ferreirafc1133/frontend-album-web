@@ -7,6 +7,8 @@ import {
   ScrollRestoration,
 } from "react-router";
 import Navbar from "./components/Navbar";
+import { ToastProvider } from "./ui/ToastProvider";
+import { ConfirmProvider } from "./ui/ConfirmProvider";
 
 import type { Route } from "./+types/root";
 import "./app.css";
@@ -44,10 +46,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <>
-      <Navbar />
-      <Outlet />
-    </>
+    <ToastProvider>
+      <ConfirmProvider>
+        <Navbar />
+        <Outlet />
+      </ConfirmProvider>
+    </ToastProvider>
   );
 }
 

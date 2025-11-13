@@ -51,6 +51,20 @@ let currentUser: User | null = {
   email: "fernando@example.com",
 };
 
+export type Friend = {
+  id: string;
+  name: string;
+  avatar?: string;
+  albums?: number;
+  status?: string;
+};
+
+let friendsDB: Friend[] = [
+  { id: "f1", name: "María López", avatar: "https://i.pravatar.cc/80?img=1", albums: 5, status: "Activo ahora" },
+  { id: "f2", name: "Carlos Pérez", avatar: "https://i.pravatar.cc/80?img=3", albums: 4, status: "Último login: 2h" },
+  { id: "f3", name: "Laura Gómez", avatar: "https://i.pravatar.cc/80?img=4", albums: 3, status: "Activo ahora" },
+];
+
 function delay<T>(data: T, ms = 200): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(data), ms));
 }
@@ -59,6 +73,18 @@ export const AlbumsAPI = {
   list: async (): Promise<Album[]> => delay([...albumsDB]),
   get: async (id: string): Promise<Album | undefined> =>
     delay(albumsDB.find((a) => a.id === id)),
+  captureSticker: async (id: string): Promise<Album | undefined> => {
+    const idx = albumsDB.findIndex((a) => a.id === id);
+    if (idx === -1) return delay(undefined);
+    const p = albumsDB[idx].progress || "0/0";
+    const [curStr, maxStr] = p.split("/");
+    const cur = parseInt(curStr || "0", 10);
+    const max = parseInt(maxStr || "0", 10);
+    const next = isNaN(cur) ? 0 : Math.min(cur + 1, isNaN(max) ? cur + 1 : max);
+    const maxOut = isNaN(max) ? next : max;
+    albumsDB[idx].progress = `${next}/${maxOut}`;
+    return delay(albumsDB[idx]);
+  },
   create: async (input: Omit<Album, "id">): Promise<Album> => {
     const a: Album = { ...input, id: String(Date.now()) };
     albumsDB.unshift(a);
@@ -89,7 +115,26 @@ export const AuthAPI = {
   },
 };
 
+export const FriendsAPI = {
+  list: async (): Promise<Friend[]> => delay([...friendsDB]),
+  add: async (name: string): Promise<Friend> => {
+    const f: Friend = {
+      id: String(Date.now()),
+      name,
+      avatar: `https://i.pravatar.cc/80?u=${encodeURIComponent(name)}`,
+      albums: 0,
+      status: "Nuevo",
+    };
+    friendsDB.unshift(f);
+    return delay(f);
+  },
+  remove: async (id: string): Promise<boolean> => {
+    const before = friendsDB.length;
+    friendsDB = friendsDB.filter((f) => f.id !== id);
+    return delay(friendsDB.length < before);
+  },
+};
+
 export function setAPIBaseURL(url: string) {
   api.defaults.baseURL = url;
 }
-
