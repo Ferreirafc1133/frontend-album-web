@@ -1,4 +1,5 @@
 import type { Route } from "./+types/profile";
+import { Link } from "react-router";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -42,9 +43,9 @@ export default function Profile() {
             </div>
           </div>
 
-          <button className="mt-6 md:mt-0 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+          <Link to="/profile/edit" className="mt-6 md:mt-0 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
             Editar perfil
-          </button>
+          </Link>
         </div>
 
         <section className="mt-10">

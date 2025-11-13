@@ -8,6 +8,7 @@ export default [
   route("/albums/edit/:id", "routes/albums.edit.$id.tsx"),
   route("/login", "routes/login.tsx"),
   route("/profile", "routes/profile.tsx"),
+  route("/profile/edit", "routes/profile.edit.tsx"),
   route("/amigos", "routes/amigos.tsx"),
   route("/contra", "routes/contra.tsx"),
   route("/desbloqueo", "routes/desbloqueo.tsx"),
