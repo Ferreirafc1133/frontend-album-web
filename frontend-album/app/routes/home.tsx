@@ -1,4 +1,5 @@
 import type { Route } from "./+types/home";
+import { Link } from "react-router";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -24,7 +25,7 @@ export default function Home() {
             <div className="p-5">
               <h3 className="text-xl font-semibold text-gray-800">Autos Clásicos</h3>
               <p className="text-sm text-gray-500 mb-3">12/40 stickers conseguidos</p>
-              <button className="bg-blue-600 text-white w-full py-2 rounded-lg hover:bg-blue-700">Ver álbum</button>
+              <Link to="/albums/1" className="block text-center bg-blue-600 text-white w-full py-2 rounded-lg hover:bg-blue-700">Ver álbum</Link>
             </div>
           </div>
 
@@ -33,7 +34,7 @@ export default function Home() {
             <div className="p-5">
               <h3 className="text-xl font-semibold text-gray-800">Playas de México</h3>
               <p className="text-sm text-gray-500 mb-3">7/30 stickers conseguidos</p>
-              <button className="bg-blue-600 text-white w-full py-2 rounded-lg hover:bg-blue-700">Ver álbum</button>
+              <Link to="/albums/2" className="block text-center bg-blue-600 text-white w-full py-2 rounded-lg hover:bg-blue-700">Ver álbum</Link>
             </div>
           </div>
 
@@ -42,7 +43,7 @@ export default function Home() {
             <div className="p-5">
               <h3 className="text-xl font-semibold text-gray-800">Reto Fitness</h3>
               <p className="text-sm text-gray-500 mb-3">20/50 stickers conseguidos</p>
-              <button className="bg-blue-600 text-white w-full py-2 rounded-lg hover:bg-blue-700">Ver álbum</button>
+              <Link to="/albums/3" className="block text-center bg-blue-600 text-white w-full py-2 rounded-lg hover:bg-blue-700">Ver álbum</Link>
             </div>
           </div>
         </div>
