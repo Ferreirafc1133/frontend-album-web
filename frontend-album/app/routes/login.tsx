@@ -1,5 +1,5 @@
 import type { Route } from "./+types/login";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "react-router";
 import { AuthAPI } from "../services/api";
@@ -14,19 +14,38 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const { success, error } = useToast();
-  const { setUser } = useUserStore();
+  const setAuth = useUserStore((state) => state.setAuth);
+  const token = useUserStore((state) => state.token);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (token) {
+      console.log("LOGIN_ALREADY_AUTH");
+      navigate("/app", { replace: true });
+    }
+  }, [token, navigate]);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) { error("Correo requerido"); return; }
-    const user = await AuthAPI.login(email, password);
-    setUser(user);
-    success("Sesión iniciada");
-    navigate("/");
+    if (!username.trim()) {
+      error("Usuario requerido");
+      return;
+    }
+    console.log("LOGIN_SUBMIT", username);
+    try {
+      const resp = await AuthAPI.login(username.trim(), password);
+      setAuth({ token: resp.access, refreshToken: resp.refresh, user: resp.user });
+      success("Sesión iniciada");
+      console.log("LOGIN_SUCCESS", resp.user?.username);
+      navigate("/app");
+    } catch (err: any) {
+      const message = err?.response?.data?.detail || "Credenciales inválidas";
+      console.log("LOGIN_ERROR", message);
+      error(message);
+    }
   };
 
   return (
@@ -58,57 +77,22 @@ export default function Login() {
             />
             <h2 className="text-3xl font-semibold text-gray-800">Iniciar sesión</h2>
             <p className="text-gray-500 text-sm mt-2">
-              Ingresa tus credenciales o accede con tu cuenta favorita
+              Usa las credenciales que registraste en BadgeUp
             </p>
-          </div>
-
-          <div className="space-y-3 mb-6">
-            <button className="flex items-center justify-center w-full border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition">
-              <img
-                src="https://www.svgrepo.com/show/475656/google-color.svg"
-                className="w-5 h-5 mr-2"
-                alt="Google"
-              />
-              <span className="text-gray-700 font-medium">Continuar con Google</span>
-            </button>
-
-            <button className="flex items-center justify-center w-full border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition">
-              <img
-                src="https://www.svgrepo.com/show/452196/facebook-1.svg"
-                className="w-5 h-5 mr-2"
-                alt="Facebook"
-              />
-              <span className="text-gray-700 font-medium">Continuar con Facebook</span>
-            </button>
-
-            <button className="flex items-center justify-center w-full border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition">
-              <img
-                src="https://www.svgrepo.com/show/303128/apple-logo.svg"
-                className="w-5 h-5 mr-2"
-                alt="Apple"
-              />
-              <span className="text-gray-700 font-medium">Continuar con Apple</span>
-            </button>
-          </div>
-
-          <div className="flex items-center my-6">
-            <div className="flex-1 h-px bg-gray-300" />
-            <span className="px-3 text-gray-400 text-sm">o</span>
-            <div className="flex-1 h-px bg-gray-300" />
           </div>
 
           <form className="space-y-5" onSubmit={onSubmit}>
             <div>
-              <label className="block text-gray-700 mb-2" htmlFor="email">
-                Correo electrónico
+              <label className="block text-gray-700 mb-2" htmlFor="username">
+                Usuario
               </label>
               <input
-                id="email"
-                type="email"
-                placeholder="ejemplo@correo.com"
+                id="username"
+                type="text"
+                placeholder="Tu usuario"
                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
               />
             </div>
 
@@ -131,7 +115,7 @@ export default function Login() {
                 <input type="checkbox" className="accent-blue-600" />
                 <span>Recordarme</span>
               </label>
-              <a href="#" className="text-blue-600 hover:underline">
+              <a href="/contra" className="text-blue-600 hover:underline">
                 ¿Olvidaste tu contraseña?
               </a>
             </div>
@@ -139,8 +123,8 @@ export default function Login() {
             <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition">Entrar</button>
 
             <p className="text-center text-sm text-gray-500 mt-6">
-              ¿No tienes cuenta?{' '}
-              <a href="#" className="text-blue-600 hover:underline">
+              ¿No tienes cuenta?{" "}
+              <a href="/registro" className="text-blue-600 hover:underline">
                 Regístrate aquí
               </a>
             </p>

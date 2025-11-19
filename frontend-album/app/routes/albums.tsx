@@ -1,7 +1,9 @@
 import type { Route } from "./+types/albums";
-import { useLoaderData, Link } from "react-router";
+import { useEffect, useState } from "react";
+import { Link } from "react-router";
 import AlbumCard from "../components/AlbumCard";
-import { AlbumsAPI, type Album } from "../services/api";
+import { AlbumsAPI, type AlbumSummary } from "../services/api";
+import { useToast } from "../ui/ToastProvider";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -10,25 +12,42 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-export async function loader({}: Route.LoaderArgs) {
-  const albums = await AlbumsAPI.list();
-  return { albums };
-}
-
 export default function Albums() {
-  const { albums } = useLoaderData<typeof loader>() as { albums: Album[] };
+  const [albums, setAlbums] = useState<AlbumSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { error } = useToast();
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const data = await AlbumsAPI.list();
+        if (mounted) setAlbums(data);
+      } catch {
+        if (mounted) error("No pudimos cargar los álbumes");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [error]);
+
   return (
     <main className="p-8 container mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-semibold text-gray-800 dark:text-gray-100">Álbumes</h1>
-        <Link to="/albums/create" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-          Crear álbum
-        </Link>
+        <div className="text-sm text-gray-500">{albums.length} registros</div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {albums.map((a) => (
-          <AlbumCard key={a.id} album={a} />
-        ))}
+        {loading ? (
+          <p className="text-gray-500 col-span-3">Cargando...</p>
+        ) : albums.length === 0 ? (
+          <p className="text-gray-500 col-span-3">Aún no hay álbumes disponibles.</p>
+        ) : (
+          albums.map((a) => <AlbumCard key={a.id} album={a} />)
+        )}
       </div>
     </main>
   );

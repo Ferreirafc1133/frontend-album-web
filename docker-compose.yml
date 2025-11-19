@@ -1,0 +1,64 @@
+services:
+  backend:
+    build: ./Badgeup
+    container_name: badgeup-backend
+    env_file:
+      - ./Badgeup/.env
+    volumes:
+      - ./Badgeup:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+
+  celery:
+    build: ./Badgeup
+    container_name: badgeup-celery
+    command: celery -A badgeup worker -l info
+    env_file:
+      - ./Badgeup/.env
+    environment:
+      RUN_MIGRATIONS: "false"
+    volumes:
+      - ./Badgeup:/app
+    depends_on:
+      - backend
+      - redis
+
+  db:
+    image: postgres:15
+    container_name: badgeup-db
+    env_file:
+      - ./Badgeup/.env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-badgeup}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-badgeup}
+      POSTGRES_DB: ${POSTGRES_DB:-badgeup_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:alpine
+    container_name: badgeup-redis
+
+  frontend:
+    build: ./frontend-album
+    container_name: badgeup-frontend
+    volumes:
+      - ./frontend-album:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000/api
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+
+volumes:
+  postgres_data:

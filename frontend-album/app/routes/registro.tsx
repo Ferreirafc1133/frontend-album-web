@@ -14,20 +14,50 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Registro() {
-  const [nombre, setNombre] = useState("");
+  const [username, setUsername] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const { success, error } = useToast();
-  const { setUser } = useUserStore();
+  const setAuth = useUserStore((state) => state.setAuth);
   const navigate = useNavigate();
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!nombre.trim() || !email.trim()) { error("Completa los datos"); return; }
-    const user = await AuthAPI.register(nombre.trim(), email.trim(), password);
-    setUser(user);
-    success("Cuenta creada");
-    navigate("/profile");
+    if (!username.trim() || !email.trim()) {
+      error("Completa todos los campos obligatorios.");
+      return;
+    }
+    if (password !== passwordConfirm) {
+      error("Las contraseñas no coinciden.");
+      return;
+    }
+    console.log("REGISTER_SUBMIT", username);
+    try {
+      await AuthAPI.register({
+        username: username.trim(),
+        email: email.trim(),
+        password,
+        password_confirm: passwordConfirm,
+        first_name: firstName,
+        last_name: lastName,
+      });
+      const login = await AuthAPI.login(username.trim(), password);
+      setAuth({ token: login.access, refreshToken: login.refresh, user: login.user });
+      success("Cuenta creada");
+      console.log("REGISTER_SUCCESS", login.user?.username);
+      navigate("/app");
+    } catch (err: any) {
+      const detail = err?.response?.data;
+      let message = "No pudimos crear tu cuenta.";
+      if (detail) {
+        message = typeof detail === "string" ? detail : JSON.stringify(detail);
+      }
+      console.log("REGISTER_ERROR", message);
+      error(message);
+    }
   };
 
   return (
@@ -61,49 +91,82 @@ export default function Registro() {
               className="w-14 h-14 mx-auto mb-4"
             />
             <h2 className="text-3xl font-semibold text-gray-800">Crear cuenta</h2>
-            <p className="text-gray-500 text-sm mt-2">Usa tus datos o accede con una red social</p>
-          </div>
-
-          <div className="space-y-3 mb-6">
-            <button className="flex items-center justify-center w-full border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition">
-              <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5 mr-2" alt="Google" />
-              <span className="text-gray-700 font-medium">Registrarte con Google</span>
-            </button>
-            <button className="flex items-center justify-center w-full border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition">
-              <img src="https://www.svgrepo.com/show/452196/facebook-1.svg" className="w-5 h-5 mr-2" alt="Facebook" />
-              <span className="text-gray-700 font-medium">Registrarte con Facebook</span>
-            </button>
-            <button className="flex items-center justify-center w-full border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition">
-              <img src="https://www.svgrepo.com/show/303128/apple-logo.svg" className="w-5 h-5 mr-2" alt="Apple" />
-              <span className="text-gray-700 font-medium">Registrarte con Apple</span>
-            </button>
-          </div>
-
-          <div className="flex items-center my-6">
-            <div className="flex-1 h-px bg-gray-300" />
-            <span className="px-3 text-gray-400 text-sm">o</span>
-            <div className="flex-1 h-px bg-gray-300" />
+            <p className="text-gray-500 text-sm mt-2">Usa tus datos para iniciar en BadgeUp</p>
           </div>
 
           <form className="space-y-5" onSubmit={onSubmit}>
             <div>
-              <label className="block text-gray-700 mb-2" htmlFor="nombre">Nombre completo</label>
-              <input id="nombre" type="text" placeholder="Tu nombre completo" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+              <label className="block text-gray-700 mb-2" htmlFor="username">Usuario</label>
+              <input
+                id="username"
+                type="text"
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-700 mb-2" htmlFor="firstName">Nombre</label>
+                <input
+                  id="firstName"
+                  type="text"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 mb-2" htmlFor="lastName">Apellido</label>
+                <input
+                  id="lastName"
+                  type="text"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                />
+              </div>
             </div>
             <div>
               <label className="block text-gray-700 mb-2" htmlFor="email">Correo electrónico</label>
-              <input id="email" type="email" placeholder="ejemplo@correo.com" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <input
+                id="email"
+                type="email"
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
-            <div>
-              <label className="block text-gray-700 mb-2" htmlFor="password">Contraseña</label>
-              <input id="password" type="password" placeholder="********" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-700 mb-2" htmlFor="password">Contraseña</label>
+                <input
+                  id="password"
+                  type="password"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 mb-2" htmlFor="passwordConfirm">Confirmar contraseña</label>
+                <input
+                  id="passwordConfirm"
+                  type="password"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={passwordConfirm}
+                  onChange={(e) => setPasswordConfirm(e.target.value)}
+                />
+              </div>
             </div>
-            <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition">Crear cuenta</button>
+            <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition">
+              Crear cuenta
+            </button>
           </form>
 
           <p className="text-center text-sm text-gray-500 mt-8">
-            ¿Ya tienes cuenta?{' '}
-            <a href="/login" className="text-blue-600 font-medium hover:underline">Inicia sesión aquí</a>
+            ¿Ya tienes cuenta?{" "}
+            <a href="/" className="text-blue-600 font-medium hover:underline">Inicia sesión aquí</a>
           </p>
         </div>
       </div>

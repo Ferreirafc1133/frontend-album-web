@@ -1,5 +1,10 @@
 import type { Route } from "./+types/profile.edit";
 import { Link } from "react-router";
+import { useState } from "react";
+import type { FormEvent } from "react";
+import { useUserStore } from "../store/useUserStore";
+import { AuthAPI } from "../services/api";
+import { useToast } from "../ui/ToastProvider";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -9,6 +14,39 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function EditProfile() {
+  const user = useUserStore((state) => state.user);
+  const setAuth = useUserStore((state) => state.setAuth);
+  const token = useUserStore((state) => state.token);
+  const refreshToken = useUserStore((state) => state.refreshToken);
+  const { success, error } = useToast();
+
+  const [firstName, setFirstName] = useState(user?.first_name || "");
+  const [lastName, setLastName] = useState(user?.last_name || "");
+  const [bio, setBio] = useState(user?.bio || "");
+  const [saving, setSaving] = useState(false);
+
+  if (!user) {
+    return <div className="p-10 text-gray-500">Cargando perfil...</div>;
+  }
+
+  const onSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const updated = await AuthAPI.updateProfile({
+        first_name: firstName,
+        last_name: lastName,
+        bio,
+      });
+      setAuth({ token, refreshToken, user: updated });
+      success("Perfil actualizado");
+    } catch {
+      error("No pudimos actualizar el perfil.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <main className="p-10 max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-6">
@@ -17,46 +55,70 @@ export default function EditProfile() {
       </div>
 
       <div className="bg-white rounded-xl shadow-md p-8">
-        <form className="space-y-6">
+        <form className="space-y-6" onSubmit={onSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-gray-700 mb-2" htmlFor="name">Nombre</label>
-              <input id="name" type="text" defaultValue="Fernando Chávez" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <label className="block text-gray-700 mb-2" htmlFor="firstName">Nombre</label>
+              <input
+                id="firstName"
+                type="text"
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 mb-2" htmlFor="lastName">Apellido</label>
+              <input
+                id="lastName"
+                type="text"
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+              />
             </div>
             <div>
               <label className="block text-gray-700 mb-2" htmlFor="email">Correo</label>
-              <input id="email" type="email" defaultValue="fernando@example.com" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input
+                id="email"
+                type="email"
+                disabled
+                value={user.email}
+                className="w-full px-4 py-2 border rounded-lg bg-gray-50 text-gray-500"
+              />
             </div>
             <div>
-              <label className="block text-gray-700 mb-2" htmlFor="city">Ciudad</label>
-              <input id="city" type="text" defaultValue="Guadalajara, MX" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-            </div>
-            <div>
-              <label className="block text-gray-700 mb-2" htmlFor="level">Nivel</label>
-              <input id="level" type="number" defaultValue={27} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <label className="block text-gray-700 mb-2" htmlFor="username">Usuario</label>
+              <input
+                id="username"
+                type="text"
+                disabled
+                value={user.username}
+                className="w-full px-4 py-2 border rounded-lg bg-gray-50 text-gray-500"
+              />
             </div>
           </div>
 
           <div>
             <label className="block text-gray-700 mb-2" htmlFor="bio">Bio</label>
-            <textarea id="bio" rows={4} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Cuéntanos algo sobre ti" />
-          </div>
-
-          <div className="flex items-center gap-4">
-            <img src="https://i.pravatar.cc/150?img=8" alt="Avatar" className="w-16 h-16 rounded-full border" />
-            <label className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 cursor-pointer">
-              Cambiar foto
-              <input type="file" accept="image/*" className="hidden" />
-            </label>
+            <textarea
+              id="bio"
+              rows={4}
+              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="Cuéntanos algo sobre ti"
+            />
           </div>
 
           <div className="flex gap-3 justify-end">
             <Link to="/profile" className="bg-gray-200 text-gray-700 px-5 py-2 rounded-lg hover:bg-gray-300">Cancelar</Link>
-            <button type="button" className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700">Guardar</button>
+            <button type="submit" disabled={saving} className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50">
+              {saving ? "Guardando..." : "Guardar"}
+            </button>
           </div>
         </form>
       </div>
     </main>
   );
 }
-

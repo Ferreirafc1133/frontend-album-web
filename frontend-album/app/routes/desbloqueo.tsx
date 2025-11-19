@@ -1,4 +1,5 @@
 import type { Route } from "./+types/desbloqueo";
+import { useSearchParams, Link } from "react-router";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -8,6 +9,10 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Desbloqueo() {
+  const [params] = useSearchParams();
+  const stickerName = params.get("sticker") || "Sticker";
+  const albumName = params.get("album") || "álbum";
+
   return (
     <div className="bg-blue-50 font-sans min-h-screen flex flex-col items-center justify-center">
       <div className="bg-white p-10 rounded-2xl shadow-2xl text-center max-w-lg">
@@ -16,8 +21,10 @@ export default function Desbloqueo() {
             <path d="M20 6L9 17l-5-5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
-        <h2 className="text-3xl font-bold text-gray-800">Sticker desbloqueado</h2>
-        <p className="text-gray-600 mt-2">Has obtenido un nuevo sticker para tu álbum</p>
+        <h2 className="text-3xl font-bold text-gray-800">Sticker registrado</h2>
+        <p className="text-gray-600 mt-2">
+          {stickerName} fue enviado para validación en {albumName}.
+        </p>
         <div className="mt-6">
           <img
             src="https://images.unsplash.com/photo-1519638402307-55998d4a9b1e?w=600"
@@ -26,7 +33,9 @@ export default function Desbloqueo() {
           />
         </div>
         <div className="mt-8 flex gap-3 justify-center">
-          <a href="/albums" className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700">Ver álbum</a>
+          <Link to="/app/albums" className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700">
+            Ver álbum
+          </Link>
           <button className="bg-gray-200 text-gray-700 px-5 py-2 rounded-lg hover:bg-gray-300">Compartir</button>
         </div>
       </div>
