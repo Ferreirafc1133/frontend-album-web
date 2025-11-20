@@ -1,6 +1,5 @@
 import type { Route } from "./+types/albums";
 import { useEffect, useState } from "react";
-import { Link } from "react-router";
 import AlbumCard from "../components/AlbumCard";
 import { AlbumsAPI, type AlbumSummary } from "../services/api";
 import { useToast } from "../ui/ToastProvider";

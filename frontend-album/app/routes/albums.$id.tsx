@@ -1,5 +1,5 @@
 import type { Route } from "./+types/albums.$id";
-import { useParams, Link, useNavigate } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import { useEffect, useState } from "react";
 import { AlbumsAPI, type AlbumDetail, type Sticker, resolveMediaUrl } from "../services/api";
 import { useToast } from "../ui/ToastProvider";

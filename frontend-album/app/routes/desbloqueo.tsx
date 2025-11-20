@@ -1,5 +1,5 @@
 import type { Route } from "./+types/desbloqueo";
-import { useSearchParams, Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 
 export function meta({}: Route.MetaArgs) {
   return [

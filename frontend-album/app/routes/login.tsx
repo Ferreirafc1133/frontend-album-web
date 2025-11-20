@@ -1,7 +1,7 @@
 import type { Route } from "./+types/login";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { AuthAPI } from "../services/api";
 import { useToast } from "../ui/ToastProvider";
 import { useUserStore } from "../store/useUserStore";
@@ -115,18 +115,18 @@ export default function Login() {
                 <input type="checkbox" className="accent-blue-600" />
                 <span>Recordarme</span>
               </label>
-              <a href="/contra" className="text-blue-600 hover:underline">
+              <Link to="/contra" className="text-blue-600 hover:underline">
                 ¿Olvidaste tu contraseña?
-              </a>
+              </Link>
             </div>
 
             <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition">Entrar</button>
 
             <p className="text-center text-sm text-gray-500 mt-6">
               ¿No tienes cuenta?{" "}
-              <a href="/registro" className="text-blue-600 hover:underline">
+              <Link to="/registro" className="text-blue-600 hover:underline">
                 Regístrate aquí
-              </a>
+              </Link>
             </p>
           </form>
         </div>

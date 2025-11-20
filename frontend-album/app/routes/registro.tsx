@@ -1,7 +1,7 @@
 import type { Route } from "./+types/registro";
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { AuthAPI } from "../services/api";
 import { useToast } from "../ui/ToastProvider";
 import { useUserStore } from "../store/useUserStore";
@@ -166,7 +166,9 @@ export default function Registro() {
 
           <p className="text-center text-sm text-gray-500 mt-8">
             ¿Ya tienes cuenta?{" "}
-            <a href="/" className="text-blue-600 font-medium hover:underline">Inicia sesión aquí</a>
+            <Link to="/login" className="text-blue-600 font-medium hover:underline">
+              Inicia sesión aquí
+            </Link>
           </p>
         </div>
       </div>

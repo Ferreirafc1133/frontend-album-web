@@ -1,4 +1,5 @@
 import type { Route } from "./+types/contra";
+import { Link } from "react-router";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -66,14 +67,13 @@ export default function Contra() {
           </form>
 
           <p className="text-center text-sm text-gray-500 mt-8">
-            ¿Recordaste tu contraseña?{' '}
-            <a href="/login" className="text-blue-600 font-medium hover:underline">
+            ¿Recordaste tu contraseña?{" "}
+            <Link to="/login" className="text-blue-600 font-medium hover:underline">
               Volver al inicio de sesión
-            </a>
+            </Link>
           </p>
         </div>
       </div>
     </div>
   );
 }
-
