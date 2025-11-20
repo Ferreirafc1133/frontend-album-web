@@ -1,7 +1,7 @@
 import type { Route } from "./+types/login";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { AuthAPI } from "../services/api";
 import { useToast } from "../ui/ToastProvider";
 import { useUserStore } from "../store/useUserStore";
@@ -20,6 +20,9 @@ export default function Login() {
   const setAuth = useUserStore((state) => state.setAuth);
   const token = useUserStore((state) => state.token);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const apiBase = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+  const backendHost = apiBase.replace(/\/api\/?$/, "");
 
   useEffect(() => {
     if (token) {
@@ -27,6 +30,27 @@ export default function Login() {
       navigate("/app", { replace: true });
     }
   }, [token, navigate]);
+
+  useEffect(() => {
+    const fromGoogle = searchParams.get("google");
+    const access = searchParams.get("access");
+    const refresh = searchParams.get("refresh");
+
+    if (fromGoogle && access && refresh) {
+      console.log("LOGIN_GOOGLE_CALLBACK", access);
+      setAuth({ token: access, refreshToken: refresh, user: null });
+
+      AuthAPI.me()
+        .then((profile) => {
+          setAuth({ token: access, refreshToken: refresh, user: profile });
+          success("Sesión iniciada con Google");
+          navigate("/app", { replace: true });
+        })
+        .catch(() => {
+          error("No se pudo completar el inicio de sesión con Google");
+        });
+    }
+  }, [searchParams, setAuth, success, error, navigate]);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -37,15 +61,24 @@ export default function Login() {
     console.log("LOGIN_SUBMIT", username);
     try {
       const resp = await AuthAPI.login(username.trim(), password);
-      setAuth({ token: resp.access, refreshToken: resp.refresh, user: resp.user });
+      setAuth({
+        token: resp.access,
+        refreshToken: resp.refresh,
+        user: resp.user,
+      });
       success("Sesión iniciada");
       console.log("LOGIN_SUCCESS", resp.user?.username);
-      navigate("/app");
+      navigate("/app", { replace: true });
     } catch (err: any) {
       const message = err?.response?.data?.detail || "Credenciales inválidas";
       console.log("LOGIN_ERROR", message);
       error(message);
     }
+  };
+
+  const loginWithGoogle = () => {
+    console.log("LOGIN_WITH_GOOGLE");
+    window.location.href = `${backendHost}/api/auth/google/login/`;
   };
 
   return (
@@ -56,9 +89,12 @@ export default function Login() {
           alt="Logo institucional"
           className="w-24 h-24 mb-6"
         />
-        <h1 className="text-4xl font-bold mb-4 text-center">Sistema de Registro</h1>
+        <h1 className="text-4xl font-bold mb-4 text-center">
+          Sistema de Registro
+        </h1>
         <p className="text-lg text-blue-100 text-center w-3/4 leading-relaxed">
-          Gestiona tus formularios, usuarios y proyectos desde una plataforma moderna, segura y accesible.
+          Gestiona tus formularios, usuarios y proyectos desde una plataforma
+          moderna, segura y accesible.
         </p>
         <img
           src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800"
@@ -75,7 +111,9 @@ export default function Login() {
               alt="Logo"
               className="w-14 h-14 mx-auto mb-4"
             />
-            <h2 className="text-3xl font-semibold text-gray-800">Iniciar sesión</h2>
+            <h2 className="text-3xl font-semibold text-gray-800">
+              Iniciar sesión
+            </h2>
             <p className="text-gray-500 text-sm mt-2">
               Usa las credenciales que registraste en BadgeUp
             </p>
@@ -120,7 +158,25 @@ export default function Login() {
               </Link>
             </div>
 
-            <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition">Entrar</button>
+            <button
+              type="submit"
+              className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition"
+            >
+              Entrar
+            </button>
+
+            <button
+              type="button"
+              onClick={loginWithGoogle}
+              className="w-full mt-3 border border-gray-300 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-50 transition flex items-center justify-center gap-2"
+            >
+              <img
+                src="https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
+                alt="Google"
+                className="w-5 h-5"
+              />
+              <span>Iniciar sesión con Google</span>
+            </button>
 
             <p className="text-center text-sm text-gray-500 mt-6">
               ¿No tienes cuenta?{" "}

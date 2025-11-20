@@ -109,25 +109,50 @@ type RegisterPayload = {
   last_name: string;
 };
 
+export interface SocialLoginPayload {
+  email: string;
+  first_name?: string;
+  last_name?: string;
+}
+
 export const AuthAPI = {
   async login(username: string, password: string) {
-    const { data } = await api.post<LoginResponse>("/auth/login/", { username, password });
+    const { data } = await api.post<LoginResponse>("/auth/login/", {
+      username,
+      password,
+    });
     return data;
   },
   async register(payload: RegisterPayload) {
     const { data } = await api.post<ApiUser>("/auth/register/", payload);
     return data;
   },
+  async socialLogin(
+    provider: "google" | "microsoft" | "facebook",
+    payload: SocialLoginPayload,
+  ) {
+    const { data } = await api.post<LoginResponse>("/auth/social-login/", {
+      provider,
+      ...payload,
+    });
+    return data;
+  },
   async me() {
     const { data } = await api.get<ApiUser>("/auth/profile/");
     return data;
   },
-  async updateProfile(payload: Partial<Omit<ApiUser, "id" | "points" | "date_joined" | "username" | "email">>) {
+  async updateProfile(
+    payload: Partial<
+      Omit<ApiUser, "id" | "points" | "date_joined" | "username" | "email">
+    >,
+  ) {
     const { data } = await api.patch<ApiUser>("/auth/profile/", payload);
     return data;
   },
   async leaderboard(limit = 10) {
-    const { data } = await api.get<PaginatedResponse<ApiUser> | ApiUser[]>(`/auth/leaderboard/?limit=${limit}`);
+    const { data } = await api.get<PaginatedResponse<ApiUser> | ApiUser[]>(
+      `/auth/leaderboard/?limit=${limit}`,
+    );
     return unwrapList<ApiUser>(data);
   },
   async logout() {
