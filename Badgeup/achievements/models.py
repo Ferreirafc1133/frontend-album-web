@@ -38,6 +38,7 @@ class UserSticker(models.Model):
     validated = models.BooleanField(default=False)
     validated_at = models.DateTimeField(blank=True, null=True)
     validation_notes = models.JSONField(blank=True, null=True)
+    validation_score = models.FloatField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

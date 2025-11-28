@@ -28,21 +28,33 @@ def validate_user_sticker(self, user_sticker_id: int):
     user_sticker.save(update_fields=["status", "updated_at"])
 
     result = analyze_user_sticker(user_sticker)
+
+    if result.get("error"):
+        user_sticker.status = UserSticker.STATUS_PENDING
+        user_sticker.validated = False
+        user_sticker.validation_notes = result
+        user_sticker.validation_score = None
+        user_sticker.save(
+            update_fields=["status", "validated", "validation_notes", "validation_score", "updated_at"]
+        )
+        logger.warning("OpenAI validation error for UserSticker %s: %s", user_sticker_id, result.get("error"))
+        return
+
     approved = result.get("approved", False)
-    status_value = (
-        UserSticker.STATUS_APPROVED if approved else UserSticker.STATUS_REJECTED
-    )
+    status_value = UserSticker.STATUS_APPROVED if approved else UserSticker.STATUS_REJECTED
 
     user_sticker.status = status_value
     user_sticker.validated = approved
     user_sticker.validated_at = timezone.now() if approved else None
     user_sticker.validation_notes = result
+    user_sticker.validation_score = result.get("match_score")
     user_sticker.save(
         update_fields=[
             "status",
             "validated",
             "validated_at",
             "validation_notes",
+            "validation_score",
             "updated_at",
         ]
     )

@@ -120,3 +120,27 @@ Panel admin disponible en `/admin/`.
 - Añadir documentación OpenAPI (e.g., drf-spectacular).
 
 ¡Listo! El backend queda preparado para conectar con tu frontend React y seguir iterando la experiencia de BadgeUp.
+
+## Validación de stickers con OpenAI Vision
+
+El backend puede usar OpenAI (visión) para validar si la foto del usuario coincide con el sticker:
+
+- Configuración:
+  - Añade `OPENAI_API_KEY` en `.env` (ya soportado en `settings.py`).
+  - `USE_OPENAI_STICKER_VALIDATION` se activa automáticamente si hay API key.
+- Dependencia: `openai>=1.0.0` (incluida en `requirements.txt`).
+- Flujo:
+  1. El usuario sube foto (UserSticker).
+  2. La tarea Celery `validate_user_sticker` llama a `achievements.services.analyze_user_sticker`.
+  3. Se envían a OpenAI la imagen de referencia del sticker, la foto del usuario y un prompt con nombre/álbum/descr.
+  4. OpenAI responde JSON: `{"match_score": 0-1, "is_match": bool, "reason": "..."}`.
+  5. Si `is_match=true` y `match_score>=0.6`, se aprueba; de lo contrario se rechaza. El score y notas se guardan en `validation_score` y `validation_notes`.
+  6. Si no hay API key, se autoaprueba (modo dev) para no romper el flujo.
+- Prueba manual:
+  - Crea un sticker “Dodge Charger SRT Hellcat 2015–2023” con imagen de referencia.
+  - Envía una foto real de un Hellcat como evidencia (POST `/api/stickers/<id>/unlock/` con `photo`).
+  - La tarea debería dejar el UserSticker en `approved` con un `validation_score` alto.
+- Ejemplo de payload enviado a OpenAI (resumen):
+  - Modelo: `gpt-4.1-mini`
+  - Input: prompt con texto del sticker + imágenes [`sticker.image_reference`, `user_sticker.photo`]
+  - Respuesta esperada (JSON): `{"match_score":0.78,"is_match":true,"reason":"Coincide con Charger Hellcat 2015-2023"}`

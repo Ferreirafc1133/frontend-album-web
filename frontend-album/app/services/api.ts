@@ -144,6 +144,20 @@ export interface UnlockStickerPayload {
   comment?: string;
 }
 
+export type MatchPhotoResult = {
+  unlocked: boolean;
+  sticker?: Sticker;
+  match_score?: number;
+  car?: {
+    make?: string;
+    model?: string;
+    generation?: string | null;
+    year_range?: string | null;
+  };
+  reason?: string;
+  message?: string;
+};
+
 export const AuthAPI = {
   async login(username: string, password: string) {
     const { data } = await api.post<LoginResponse>("/auth/login/", {
@@ -219,6 +233,15 @@ export const AlbumsAPI = {
   async captureSticker(stickerId: string | number, photoUrl: string) {
     const { data } = await api.post<UserSticker>(`/stickers/${stickerId}/unlock/`, { photo_url: photoUrl });
     return data;
+  },
+  async matchPhoto(albumId: number | string, photo: File): Promise<MatchPhotoResult> {
+    const formData = new FormData();
+    formData.append("photo", photo);
+
+    const resp = await api.post<MatchPhotoResult>(`/albums/${albumId}/match-photo/`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return resp.data;
   },
 };
 

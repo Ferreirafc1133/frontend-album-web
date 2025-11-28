@@ -41,6 +41,8 @@ export default function AlbumDetail() {
     image: null as File | null,
   });
   const [updatingSticker, setUpdatingSticker] = useState(false);
+  const [matchPhotoFile, setMatchPhotoFile] = useState<File | null>(null);
+  const [matching, setMatching] = useState(false);
   const { error, success } = useToast();
   const navigate = useNavigate();
   const user = useUserStore((s) => s.user);
@@ -186,6 +188,56 @@ export default function AlbumDetail() {
           <h3 className="text-2xl font-semibold text-gray-800 mb-2">Descripción</h3>
           <p className="text-gray-600 leading-relaxed max-w-4xl">{album.description || "Este álbum aún no tiene descripción."}</p>
         </section>
+
+        {!user?.is_staff && (
+          <section className="bg-white rounded-xl shadow p-6 mb-6 max-w-xl">
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">Desbloquear con foto</h3>
+            <p className="text-sm text-gray-600 mb-3">
+              Sube una foto real de tu coche. Usamos IA para identificar el modelo y ver si coincide con algún sticker de este álbum.
+            </p>
+
+            <div className="flex flex-col gap-3">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setMatchPhotoFile(e.target.files?.[0] || null)}
+              />
+              <p className="text-xs text-gray-600">
+                {matchPhotoFile ? `Archivo seleccionado: ${matchPhotoFile.name}` : "Aún no seleccionas un archivo."}
+              </p>
+              <button
+                type="button"
+                disabled={!matchPhotoFile || matching}
+                onClick={async () => {
+                  if (!album || !matchPhotoFile) return;
+                  try {
+                    setMatching(true);
+                    const result = await AlbumsAPI.matchPhoto(album.id, matchPhotoFile);
+
+                    if (!result.unlocked) {
+                      const msg =
+                        result.message ||
+                        "No encontramos ningún sticker que coincida con esta foto.";
+                      error(msg);
+                    } else {
+                      success(`Sticker desbloqueado: ${result.sticker?.name || "Sticker"}`);
+                      const updated = await AlbumsAPI.get(String(album.id));
+                      setAlbum(updated);
+                    }
+                  } catch (err: any) {
+                    console.error("MATCH_PHOTO_ERROR", err?.response?.data || err);
+                    error("No pudimos procesar tu foto. Intenta de nuevo.");
+                  } finally {
+                    setMatching(false);
+                  }
+                }}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-60"
+              >
+                {matching ? "Analizando..." : "Subir foto y buscar sticker"}
+              </button>
+            </div>
+          </section>
+        )}
 
         <section>
           <div className="flex items-center justify-between mb-4">
