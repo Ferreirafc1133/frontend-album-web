@@ -222,6 +222,26 @@ export const AlbumsAPI = {
     });
     return data;
   },
+  async update(id: string | number, payload: Partial<CreateAlbumPayload>) {
+    const formData = new FormData();
+    if (payload.title !== undefined) formData.append("title", payload.title);
+    if (payload.description !== undefined) formData.append("description", payload.description);
+    if (payload.theme !== undefined) formData.append("theme", payload.theme);
+    if (payload.is_premium !== undefined) formData.append("is_premium", String(payload.is_premium));
+    if (payload.price !== undefined) {
+      if (payload.price === null) {
+        formData.append("price", "");
+      } else {
+        formData.append("price", payload.price);
+      }
+    }
+    if (payload.cover_image) formData.append("cover_image", payload.cover_image);
+
+    const { data } = await api.patch<AlbumDetail>(`/albums/${id}/`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return data;
+  },
   async get(id: string | number) {
     const { data } = await api.get<AlbumDetail>(`/albums/${id}/`);
     return data;

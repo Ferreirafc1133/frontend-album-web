@@ -29,10 +29,14 @@ class AlbumListCreateView(generics.ListCreateAPIView):
         return AlbumSerializer
 
 
-class AlbumDetailView(generics.RetrieveAPIView):
+class AlbumDetailView(generics.RetrieveUpdateAPIView):
     queryset = Album.objects.prefetch_related("stickers").all()
-    serializer_class = AlbumDetailSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdminOrReadOnly]
+
+    def get_serializer_class(self):
+        if self.request.method in ("PUT", "PATCH"):
+            return AlbumCreateSerializer
+        return AlbumDetailSerializer
 
 
 class StickerDetailView(generics.RetrieveUpdateAPIView):

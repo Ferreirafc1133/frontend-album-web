@@ -41,6 +41,14 @@ export default function AlbumDetail() {
     image: null as File | null,
   });
   const [updatingSticker, setUpdatingSticker] = useState(false);
+  const [showEditAlbum, setShowEditAlbum] = useState(false);
+  const [albumTitle, setAlbumTitle] = useState("");
+  const [albumDescription, setAlbumDescription] = useState("");
+  const [albumTheme, setAlbumTheme] = useState("");
+  const [albumPrice, setAlbumPrice] = useState("");
+  const [albumPremium, setAlbumPremium] = useState(false);
+  const [albumCover, setAlbumCover] = useState<File | null>(null);
+  const [savingAlbum, setSavingAlbum] = useState(false);
   const [matchPhotoFile, setMatchPhotoFile] = useState<File | null>(null);
   const [matching, setMatching] = useState(false);
   const { error, success } = useToast();
@@ -54,6 +62,14 @@ export default function AlbumDetail() {
       try {
         const data = await AlbumsAPI.get(id);
         if (mounted) setAlbum(data);
+        if (mounted && data) {
+          setAlbumTitle(data.title);
+          setAlbumDescription(data.description || "");
+          setAlbumTheme(data.theme || "");
+          setAlbumPremium(!!data.is_premium);
+          setAlbumPrice(data.price || "");
+          setAlbumCover(null);
+        }
       } catch {
         if (mounted) error("No pudimos cargar el álbum.");
       } finally {
@@ -178,8 +194,20 @@ export default function AlbumDetail() {
   return (
     <div className="bg-gray-100 font-sans min-h-screen flex flex-col">
       <header className="text-white py-10 px-8 shadow-md" style={{ backgroundColor: "#0d47a1" }}>
-        <h2 className="text-3xl font-bold mb-2">{album.title}</h2>
-        <p className="text-blue-100">{album.theme || "Sin tema"}</p>
+        <div className="flex items-start justify-between max-w-5xl mx-auto">
+          <div>
+            <h2 className="text-3xl font-bold mb-2">{album.title}</h2>
+            <p className="text-blue-100">{album.theme || "Sin tema"}</p>
+          </div>
+          {user?.is_staff && (
+            <button
+              className="text-sm bg-white text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-50 shadow"
+              onClick={() => setShowEditAlbum(true)}
+            >
+              Editar álbum
+            </button>
+          )}
+        </div>
         <img src={cover} alt={album.title} className="w-full max-w-4xl mx-auto rounded-xl mt-6 shadow-lg" />
       </header>
 
@@ -245,15 +273,23 @@ export default function AlbumDetail() {
             <div className="flex items-center gap-3">
               <p className="text-sm text-gray-500">{album.stickers.length} disponibles</p>
               {user?.is_staff && (
-                <button
-                  className="text-sm bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700"
-                  onClick={() => {
-                    const form = document.getElementById("sticker-create-form");
-                    form?.scrollIntoView({ behavior: "smooth" });
-                  }}
-                >
-                  Agregar sticker
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="text-sm bg-gray-200 text-gray-800 px-3 py-2 rounded-lg hover:bg-gray-300"
+                    onClick={() => setShowEditAlbum(true)}
+                  >
+                    Editar álbum
+                  </button>
+                  <button
+                    className="text-sm bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700"
+                    onClick={() => {
+                      const form = document.getElementById("sticker-create-form");
+                      form?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                  >
+                    Agregar sticker
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -502,6 +538,146 @@ export default function AlbumDetail() {
           </div>
         </section>
       </main>
+
+      {user?.is_staff && showEditAlbum && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b">
+              <h3 className="text-xl font-semibold text-gray-800">Editar álbum</h3>
+              <button
+                onClick={() => setShowEditAlbum(false)}
+                className="text-gray-500 hover:text-gray-700 text-sm"
+              >
+                Cerrar
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-gray-700 mb-2" htmlFor="album-title">Título *</label>
+                  <input
+                    id="album-title"
+                    type="text"
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={albumTitle}
+                    onChange={(e) => setAlbumTitle(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-700 mb-2" htmlFor="album-theme">Tema</label>
+                  <input
+                    id="album-theme"
+                    type="text"
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={albumTheme}
+                    onChange={(e) => setAlbumTheme(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <label className="block text-gray-700 mb-2" htmlFor="album-description">Descripción</label>
+                <textarea
+                  id="album-description"
+                  rows={4}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={albumDescription}
+                  onChange={(e) => setAlbumDescription(e.target.value)}
+                  placeholder="Describe el álbum"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                <label className="flex items-center gap-3 text-gray-700">
+                  <input
+                    type="checkbox"
+                    className="w-5 h-5 accent-blue-600"
+                    checked={albumPremium}
+                    onChange={(e) => setAlbumPremium(e.target.checked)}
+                  />
+                  <span>Es premium</span>
+                </label>
+                <div>
+                  <label className="block text-gray-700 mb-2" htmlFor="album-price">
+                    Precio (opcional)
+                  </label>
+                  <input
+                    id="album-price"
+                    type="text"
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={albumPrice}
+                    onChange={(e) => setAlbumPrice(e.target.value)}
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <label className="block text-gray-700 mb-2" htmlFor="album-cover">Portada (opcional)</label>
+                <input
+                  id="album-cover"
+                  type="file"
+                  accept="image/*"
+                  className="w-full"
+                  onChange={(e) => setAlbumCover(e.target.files?.[0] || null)}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {albumCover ? `Archivo seleccionado: ${albumCover.name}` : "Si no cargas archivo, se mantiene la portada actual."}
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  type="button"
+                  className="bg-gray-200 text-gray-700 px-5 py-2 rounded-lg hover:bg-gray-300"
+                  onClick={() => {
+                    setShowEditAlbum(false);
+                    setAlbumCover(null);
+                    setAlbumTitle(album.title);
+                    setAlbumDescription(album.description || "");
+                    setAlbumTheme(album.theme || "");
+                    setAlbumPremium(!!album.is_premium);
+                    setAlbumPrice(album.price || "");
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  disabled={savingAlbum}
+                  className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  onClick={async () => {
+                    if (!album) return;
+                    setSavingAlbum(true);
+                    try {
+                      await AlbumsAPI.update(album.id, {
+                        title: albumTitle.trim(),
+                        description: albumDescription.trim(),
+                        theme: albumTheme.trim(),
+                        is_premium: albumPremium,
+                        price: albumPrice.trim() || null,
+                        cover_image: albumCover || undefined,
+                      });
+                      const updated = await AlbumsAPI.get(String(album.id));
+                      setAlbum(updated);
+                      success("Álbum actualizado");
+                      setShowEditAlbum(false);
+                      setAlbumCover(null);
+                    } catch (err: any) {
+                      console.error("ALBUM_UPDATE_MODAL_ERROR", err?.response?.data || err);
+                      error("No pudimos actualizar el álbum.");
+                    } finally {
+                      setSavingAlbum(false);
+                    }
+                  }}
+                >
+                  {savingAlbum ? "Guardando..." : "Guardar cambios"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
