@@ -37,6 +37,7 @@ export default function Profile() {
   }
 
   const avatar = resolveMediaUrl(user.avatar) || "https://i.pravatar.cc/150?u=badgeup";
+  const roleLabel = user.is_staff ? "Administrador" : "Usuario";
 
   return (
     <div className="bg-gray-100 font-sans min-h-screen flex flex-col">
@@ -48,7 +49,8 @@ export default function Profile() {
             <h2 className="text-3xl font-bold text-gray-800 mb-2">
               {user.first_name || user.username} {user.last_name}
             </h2>
-            <p className="text-gray-600 mb-4">{user.email}</p>
+            <p className="text-gray-600 mb-1">{user.email}</p>
+            <p className="text-sm text-gray-500 mb-3">{roleLabel}</p>
             <div className="flex space-x-8">
               <div>
                 <p className="text-2xl font-bold text-blue-600">{user.points}</p>
@@ -61,7 +63,7 @@ export default function Profile() {
             </div>
           </div>
         </div>
-        <Link to="/profile/edit" className="mt-6 md:mt-0 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+        <Link to="/app/profile/edit" className="mt-6 md:mt-0 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
           Editar perfil
         </Link>
       </div>

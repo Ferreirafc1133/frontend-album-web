@@ -15,6 +15,7 @@ class UserStickerSerializer(serializers.ModelSerializer):
             "album",
             "photo",
             "photo_url",
+            "comment",
             "status",
             "validated",
             "validated_at",
@@ -39,7 +40,7 @@ class UserStickerSerializer(serializers.ModelSerializer):
 class StickerUnlockSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserSticker
-        fields = ("photo", "photo_url")
+        fields = ("photo", "photo_url", "comment")
 
     def validate(self, attrs):
         photo = attrs.get("photo")

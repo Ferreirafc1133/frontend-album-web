@@ -56,6 +56,7 @@ export interface ApiUser {
   bio: string;
   points: number;
   date_joined: string;
+  is_staff: boolean;
 }
 
 export interface AlbumSummary {
@@ -77,8 +78,12 @@ export interface Sticker {
   location_lat: string | null;
   location_lng: string | null;
   image_reference: string | null;
+  image?: string | null;
   reward_points: number;
   order: number;
+  rarity?: string | null;
+  is_unlocked?: boolean;
+  status?: string | null;
 }
 
 export interface AlbumDetail extends AlbumSummary {
@@ -122,6 +127,21 @@ export interface CreateAlbumPayload {
   is_premium?: boolean;
   price?: string | null;
   cover_image?: File | null;
+}
+
+export interface CreateStickerPayload {
+  album: number;
+  name: string;
+  description?: string;
+  points?: number;
+  order?: number;
+  rarity?: string;
+  image: File;
+}
+
+export interface UnlockStickerPayload {
+  photo: File;
+  comment?: string;
 }
 
 export const AuthAPI = {
@@ -193,11 +213,58 @@ export const AlbumsAPI = {
     return data;
   },
   async getSticker(id: string | number) {
-    const { data } = await api.get<Sticker>(`/albums/stickers/${id}/`);
+    const { data } = await api.get<Sticker>(`/stickers/${id}/`);
     return data;
   },
   async captureSticker(stickerId: string | number, photoUrl: string) {
     const { data } = await api.post<UserSticker>(`/stickers/${stickerId}/unlock/`, { photo_url: photoUrl });
+    return data;
+  },
+};
+
+export const StickersAPI = {
+  async listByAlbum(albumId: number) {
+    const { data } = await api.get<PaginatedResponse<Sticker> | Sticker[]>("/stickers/", {
+      params: { album: albumId },
+    });
+    return unwrapList<Sticker>(data);
+  },
+  async create(payload: CreateStickerPayload) {
+    const form = new FormData();
+    form.append("album", String(payload.album));
+    form.append("name", payload.name);
+    if (payload.description) form.append("description", payload.description);
+    if (payload.points != null) form.append("reward_points", String(payload.points));
+    if (payload.order != null) form.append("order", String(payload.order));
+    if (payload.rarity) form.append("rarity", payload.rarity);
+    form.append("image_reference", payload.image);
+
+    const { data } = await api.post<Sticker>("/stickers/", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return data;
+  },
+  async update(id: number, payload: Partial<CreateStickerPayload>) {
+    const form = new FormData();
+    if (payload.name !== undefined) form.append("name", payload.name);
+    if (payload.description !== undefined) form.append("description", payload.description);
+    if (payload.points !== undefined) form.append("reward_points", String(payload.points));
+    if (payload.order !== undefined) form.append("order", String(payload.order));
+    if (payload.rarity !== undefined) form.append("rarity", payload.rarity);
+    if (payload.image) form.append("image_reference", payload.image);
+
+    const { data } = await api.patch<Sticker>(`/stickers/${id}/`, form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return data;
+  },
+  async unlock(stickerId: number, payload: UnlockStickerPayload) {
+    const form = new FormData();
+    form.append("photo", payload.photo);
+    if (payload.comment) form.append("comment", payload.comment);
+    const { data } = await api.post<UserSticker>(`/stickers/${stickerId}/unlock/`, form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
     return data;
   },
 };

@@ -18,8 +18,15 @@ class UserSerializer(serializers.ModelSerializer):
             "bio",
             "points",
             "date_joined",
+            "is_staff",
         )
         read_only_fields = ("id", "points", "date_joined")
+
+    def update(self, instance, validated_data):
+        request = self.context.get("request")
+        if not request or not request.user.is_staff:
+            validated_data.pop("is_staff", None)
+        return super().update(instance, validated_data)
 
 
 class RegisterSerializer(serializers.ModelSerializer):

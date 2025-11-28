@@ -23,6 +23,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/auth/", include("users.urls")),
     path("api/albums/", include("albums.urls")),
+    path("api/stickers/", include("albums.sticker_urls")),
     path("api/", include("achievements.urls")),
 ]
 

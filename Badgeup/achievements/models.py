@@ -33,6 +33,7 @@ class UserSticker(models.Model):
     )
     photo = models.ImageField(upload_to="user_stickers/", blank=True, null=True)
     photo_url = models.URLField(blank=True)
+    comment = models.CharField(max_length=255, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
     validated = models.BooleanField(default=False)
     validated_at = models.DateTimeField(blank=True, null=True)
