@@ -42,3 +42,18 @@ class AlbumDetailSerializer(AlbumSerializer):
 
     class Meta(AlbumSerializer.Meta):
         fields = AlbumSerializer.Meta.fields + ("stickers",)
+
+
+class AlbumCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Album
+        fields = (
+            "id",
+            "title",
+            "description",
+            "theme",
+            "cover_image",
+            "is_premium",
+            "price",
+        )
+        read_only_fields = ("id",)

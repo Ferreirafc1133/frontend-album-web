@@ -115,6 +115,15 @@ export interface SocialLoginPayload {
   last_name?: string;
 }
 
+export interface CreateAlbumPayload {
+  title: string;
+  description?: string;
+  theme?: string;
+  is_premium?: boolean;
+  price?: string | null;
+  cover_image?: File | null;
+}
+
 export const AuthAPI = {
   async login(username: string, password: string) {
     const { data } = await api.post<LoginResponse>("/auth/login/", {
@@ -164,6 +173,20 @@ export const AlbumsAPI = {
   async list() {
     const { data } = await api.get<PaginatedResponse<AlbumSummary> | AlbumSummary[]>("/albums/");
     return unwrapList<AlbumSummary>(data);
+  },
+  async create(payload: CreateAlbumPayload) {
+    const formData = new FormData();
+    formData.append("title", payload.title);
+    if (payload.description) formData.append("description", payload.description);
+    if (payload.theme) formData.append("theme", payload.theme);
+    if (typeof payload.is_premium === "boolean") formData.append("is_premium", String(payload.is_premium));
+    if (payload.price) formData.append("price", payload.price);
+    if (payload.cover_image) formData.append("cover_image", payload.cover_image);
+
+    const { data } = await api.post<AlbumSummary | AlbumDetail>("/albums/", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return data;
   },
   async get(id: string | number) {
     const { data } = await api.get<AlbumDetail>(`/albums/${id}/`);
