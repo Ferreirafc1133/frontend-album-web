@@ -144,6 +144,10 @@ export interface UnlockStickerPayload {
   comment?: string;
 }
 
+export type UpdateProfilePayload = Partial<
+  Omit<ApiUser, "id" | "points" | "date_joined" | "username" | "email">
+> & { avatar?: File | null };
+
 export type MatchPhotoResult = {
   unlocked: boolean;
   sticker?: Sticker;
@@ -185,11 +189,21 @@ export const AuthAPI = {
     return data;
   },
   async updateProfile(
-    payload: Partial<
-      Omit<ApiUser, "id" | "points" | "date_joined" | "username" | "email">
-    >,
+    payload: UpdateProfilePayload,
   ) {
-    const { data } = await api.patch<ApiUser>("/auth/profile/", payload);
+    const form = new FormData();
+    Object.entries(payload).forEach(([key, value]) => {
+      if (value === undefined) return;
+      if (key === "avatar") {
+        if (value) form.append("avatar", value as File);
+        return;
+      }
+      form.append(key, typeof value === "boolean" ? String(value) : (value as string));
+    });
+
+    const { data } = await api.patch<ApiUser>("/auth/profile/", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
     return data;
   },
   async leaderboard(limit = 10) {

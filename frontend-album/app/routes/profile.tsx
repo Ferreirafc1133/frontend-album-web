@@ -36,7 +36,7 @@ export default function Profile() {
     return <div className="p-10 text-gray-500">Cargando perfil...</div>;
   }
 
-  const avatar = resolveMediaUrl(user.avatar) || "https://i.pravatar.cc/150?u=badgeup";
+  const avatar = resolveMediaUrl(user.avatar) || "https://www.gravatar.com/avatar/?d=mp&f=y";
   const roleLabel = user.is_staff ? "Administrador" : "Usuario";
 
   return (

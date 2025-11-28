@@ -26,7 +26,7 @@ export default function Navbar() {
     }
   }, [token, user, loadingProfile, fetchProfile, logout, navigate]);
 
-  const avatar = resolveMediaUrl(user?.avatar) || "https://i.pravatar.cc/40";
+  const avatar = resolveMediaUrl(user?.avatar) || "https://www.gravatar.com/avatar/?d=mp&f=y&s=80";
 
   if (!token) {
     return null;

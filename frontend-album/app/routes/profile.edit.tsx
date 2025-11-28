@@ -24,6 +24,7 @@ export default function EditProfile() {
   const [lastName, setLastName] = useState(user?.last_name || "");
   const [bio, setBio] = useState(user?.bio || "");
   const [isStaff, setIsStaff] = useState<boolean>(user?.is_staff || false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
   if (!user) {
@@ -39,6 +40,9 @@ export default function EditProfile() {
         last_name: lastName,
         bio,
       };
+      if (avatarFile) {
+        payload.avatar = avatarFile;
+      }
       if (user?.is_staff) {
         payload.is_staff = isStaff;
       }
@@ -115,6 +119,20 @@ export default function EditProfile() {
               onChange={(e) => setBio(e.target.value)}
               placeholder="Cuéntanos algo sobre ti"
             />
+          </div>
+
+          <div>
+            <label className="block text-gray-700 mb-2" htmlFor="avatar">Foto de perfil</label>
+            <input
+              id="avatar"
+              type="file"
+              accept="image/*"
+              onChange={(e) => setAvatarFile(e.target.files?.[0] || null)}
+              className="w-full"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              {avatarFile ? `Archivo seleccionado: ${avatarFile.name}` : "Sube una imagen para reemplazar tu foto."}
+            </p>
           </div>
 
           {user.is_staff && (

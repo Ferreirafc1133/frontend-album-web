@@ -122,6 +122,7 @@ class GoogleCallbackView(APIView):
         email = profile.get("email")
         given_name = profile.get("given_name") or ""
         family_name = profile.get("family_name") or ""
+        picture = profile.get("picture")
 
         if not email:
             return redirect(f"{settings.FRONTEND_URL}/login?error=google_no_email")
@@ -136,6 +137,9 @@ class GoogleCallbackView(APIView):
                 "last_name": family_name,
             },
         )
+        if picture:
+            user.avatar = picture
+            user.save(update_fields=["avatar"])
 
         refresh = RefreshToken.for_user(user)
         access = refresh.access_token

@@ -199,14 +199,6 @@ export default function AlbumDetail() {
             <h2 className="text-3xl font-bold mb-2">{album.title}</h2>
             <p className="text-blue-100">{album.theme || "Sin tema"}</p>
           </div>
-          {user?.is_staff && (
-            <button
-              className="text-sm bg-white text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-50 shadow"
-              onClick={() => setShowEditAlbum(true)}
-            >
-              Editar álbum
-            </button>
-          )}
         </div>
         <img src={cover} alt={album.title} className="w-full max-w-4xl mx-auto rounded-xl mt-6 shadow-lg" />
       </header>
