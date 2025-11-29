@@ -1,6 +1,6 @@
 import type { Route } from "./+types/albums.$id";
-import { Link, useNavigate, useParams } from "react-router";
-import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router";
+import { useEffect, useRef, useState } from "react";
 import {
   AlbumsAPI,
   type AlbumDetail,
@@ -22,6 +22,7 @@ export default function AlbumDetail() {
   const { id } = useParams();
   const [album, setAlbum] = useState<AlbumDetail | null>(null);
   const [loading, setLoading] = useState(true);
+
   const [creatingSticker, setCreatingSticker] = useState(false);
   const [newSticker, setNewSticker] = useState({
     name: "",
@@ -31,6 +32,7 @@ export default function AlbumDetail() {
     rarity: "",
     image: null as File | null,
   });
+
   const [editingSticker, setEditingSticker] = useState<Sticker | null>(null);
   const [editingData, setEditingData] = useState({
     name: "",
@@ -41,7 +43,11 @@ export default function AlbumDetail() {
     image: null as File | null,
   });
   const [updatingSticker, setUpdatingSticker] = useState(false);
+
   const [showEditAlbum, setShowEditAlbum] = useState(false);
+  const [showCreateSticker, setShowCreateSticker] = useState(false);
+  const [showEditStickerModal, setShowEditStickerModal] = useState(false);
+
   const [albumTitle, setAlbumTitle] = useState("");
   const [albumDescription, setAlbumDescription] = useState("");
   const [albumTheme, setAlbumTheme] = useState("");
@@ -49,10 +55,12 @@ export default function AlbumDetail() {
   const [albumPremium, setAlbumPremium] = useState(false);
   const [albumCover, setAlbumCover] = useState<File | null>(null);
   const [savingAlbum, setSavingAlbum] = useState(false);
+
   const [matchPhotoFile, setMatchPhotoFile] = useState<File | null>(null);
   const [matching, setMatching] = useState(false);
+  const captureInputRef = useRef<HTMLInputElement | null>(null);
+
   const { error, success } = useToast();
-  const navigate = useNavigate();
   const user = useUserStore((s) => s.user);
 
   useEffect(() => {
@@ -117,6 +125,7 @@ export default function AlbumDetail() {
         rarity: "",
         image: null,
       });
+      setShowCreateSticker(false);
     } catch (err: any) {
       const detail = err?.response?.data;
       let message = "No se pudo crear el sticker.";
@@ -139,6 +148,7 @@ export default function AlbumDetail() {
       rarity: sticker.rarity || "",
       image: null,
     });
+    setShowEditStickerModal(true);
   };
 
   const handleUpdateSticker = async () => {
@@ -161,6 +171,7 @@ export default function AlbumDetail() {
       const data = await AlbumsAPI.get(id as string);
       setAlbum(data);
       setEditingSticker(null);
+      setShowEditStickerModal(false);
       setEditingData({
         name: "",
         description: "",
@@ -181,6 +192,31 @@ export default function AlbumDetail() {
     }
   };
 
+  const handleMatchPhoto = async (file: File) => {
+    if (!album) return;
+    try {
+      setMatching(true);
+      setMatchPhotoFile(file);
+      const result = await AlbumsAPI.matchPhoto(album.id, file);
+
+      if (!result.unlocked) {
+        const msg =
+          result.message ||
+          "No encontramos ningún sticker que coincida con esta foto.";
+        error(msg);
+      } else {
+        success(`Sticker desbloqueado: ${result.sticker?.name || "Sticker"}`);
+        const updated = await AlbumsAPI.get(String(album.id));
+        setAlbum(updated);
+      }
+    } catch (err: any) {
+      console.error("MATCH_PHOTO_ERROR", err?.response?.data || err);
+      error("No pudimos procesar tu foto. Intenta de nuevo.");
+    } finally {
+      setMatching(false);
+    }
+  };
+
   if (loading) {
     return <div className="p-10 text-gray-500">Cargando álbum...</div>;
   }
@@ -189,336 +225,139 @@ export default function AlbumDetail() {
     return <div className="p-10 text-red-500">Álbum no encontrado.</div>;
   }
 
-  const cover = resolveMediaUrl(album.cover_image) || "https://placehold.co/1200x320?text=Album";
+  const cover =
+    resolveMediaUrl(album.cover_image) ||
+    "https://placehold.co/1200x320?text=Album";
+
+  const totalStickers = album.stickers.length;
+  const unlockedCount = album.stickers.filter(
+    (s) => s.is_unlocked,
+  ).length;
 
   return (
     <div className="bg-gray-100 font-sans min-h-screen flex flex-col">
-      <header className="text-white py-10 px-8 shadow-md" style={{ backgroundColor: "#0d47a1" }}>
-        <div className="flex items-start justify-between max-w-5xl mx-auto">
-          <div>
-            <h2 className="text-3xl font-bold mb-2">{album.title}</h2>
-            <p className="text-blue-100">{album.theme || "Sin tema"}</p>
-          </div>
-        </div>
-        <img src={cover} alt={album.title} className="w-full max-w-4xl mx-auto rounded-xl mt-6 shadow-lg" />
-      </header>
-
-      <main className="flex-1 p-10 space-y-10">
-        <section>
-          <h3 className="text-2xl font-semibold text-gray-800 mb-2">Descripción</h3>
-          <p className="text-gray-600 leading-relaxed max-w-4xl">{album.description || "Este álbum aún no tiene descripción."}</p>
-        </section>
-
-        {!user?.is_staff && (
-          <section className="bg-white rounded-xl shadow p-6 mb-6 max-w-xl">
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">Desbloquear con foto</h3>
-            <p className="text-sm text-gray-600 mb-3">
-              Sube una foto real de tu coche. Usamos IA para identificar el modelo y ver si coincide con algún sticker de este álbum.
-            </p>
-
-            <div className="flex flex-col gap-3">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setMatchPhotoFile(e.target.files?.[0] || null)}
-              />
-              <p className="text-xs text-gray-600">
-                {matchPhotoFile ? `Archivo seleccionado: ${matchPhotoFile.name}` : "Aún no seleccionas un archivo."}
-              </p>
+      {/* HERO TIPO MAQUETA AZUL */}
+      <header className="bg-blue-600 text-white py-10 shadow-md">
+        <div className="max-w-5xl mx-auto flex flex-col items-center gap-4 relative">
+          {user?.is_staff && (
+            <div className="absolute top-0 right-0 flex gap-2">
               <button
+                className="text-xs bg-white/10 border border-white/30 px-3 py-1 rounded-lg hover:bg-white/20"
+                onClick={() => setShowEditAlbum(true)}
                 type="button"
-                disabled={!matchPhotoFile || matching}
-                onClick={async () => {
-                  if (!album || !matchPhotoFile) return;
-                  try {
-                    setMatching(true);
-                    const result = await AlbumsAPI.matchPhoto(album.id, matchPhotoFile);
-
-                    if (!result.unlocked) {
-                      const msg =
-                        result.message ||
-                        "No encontramos ningún sticker que coincida con esta foto.";
-                      error(msg);
-                    } else {
-                      success(`Sticker desbloqueado: ${result.sticker?.name || "Sticker"}`);
-                      const updated = await AlbumsAPI.get(String(album.id));
-                      setAlbum(updated);
-                    }
-                  } catch (err: any) {
-                    console.error("MATCH_PHOTO_ERROR", err?.response?.data || err);
-                    error("No pudimos procesar tu foto. Intenta de nuevo.");
-                  } finally {
-                    setMatching(false);
-                  }
-                }}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-60"
               >
-                {matching ? "Analizando..." : "Subir foto y buscar sticker"}
+                Editar álbum
+              </button>
+              <button
+                className="text-xs bg-white px-3 py-1 rounded-lg text-blue-700 hover:bg-blue-50"
+                onClick={() => setShowCreateSticker(true)}
+                type="button"
+              >
+                Nuevo sticker
               </button>
             </div>
-          </section>
-        )}
+          )}
 
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-2xl font-semibold text-gray-800">Stickers</h3>
-            <div className="flex items-center gap-3">
-              <p className="text-sm text-gray-500">{album.stickers.length} disponibles</p>
-              {user?.is_staff && (
-                <div className="flex items-center gap-2">
-                  <button
-                    className="text-sm bg-gray-200 text-gray-800 px-3 py-2 rounded-lg hover:bg-gray-300"
-                    onClick={() => setShowEditAlbum(true)}
-                  >
-                    Editar álbum
-                  </button>
-                  <button
-                    className="text-sm bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700"
-                    onClick={() => {
-                      const form = document.getElementById("sticker-create-form");
-                      form?.scrollIntoView({ behavior: "smooth" });
-                    }}
-                  >
-                    Agregar sticker
-                  </button>
-                </div>
+          <h1 className="text-3xl md:text-4xl font-bold text-center">
+            {album.title}
+          </h1>
+          <p className="text-blue-100 text-sm">
+            {unlockedCount}/{totalStickers} stickers desbloqueados
+          </p>
+
+          {!user?.is_staff && (
+            <>
+              <button
+                type="button"
+                disabled={matching}
+                className="mt-2 inline-flex items-center gap-2 bg-white text-blue-700 px-5 py-2 rounded-full shadow hover:bg-blue-50 disabled:opacity-60"
+                onClick={() => captureInputRef.current?.click()}
+              >
+                <span>📸</span>
+                <span>
+                  {matching ? "Analizando..." : "Capturar Sticker"}
+                </span>
+              </button>
+              <input
+                ref={captureInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0] || null;
+                  if (file) {
+                    await handleMatchPhoto(file);
+                  }
+                }}
+              />
+              {matchPhotoFile && (
+                <p className="text-xs text-blue-100">
+                  Foto seleccionada: {matchPhotoFile.name}
+                </p>
               )}
-            </div>
-          </div>
-          {user?.is_staff && (
-            <div id="sticker-create-form" className="bg-white rounded-xl shadow p-4 mb-6 space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="text-lg font-semibold text-gray-800">Nuevo sticker</h4>
-                <span className="text-sm text-gray-500">Solo admins</span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-700 mb-1" htmlFor="sticker-name">Nombre *</label>
-                  <input
-                    id="sticker-name"
-                    type="text"
-                    className="w-full border rounded-lg px-3 py-2"
-                    value={newSticker.name}
-                    onChange={(e) => setNewSticker((s) => ({ ...s, name: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700 mb-1" htmlFor="sticker-points">Puntos</label>
-                  <input
-                    id="sticker-points"
-                    type="number"
-                    className="w-full border rounded-lg px-3 py-2"
-                    value={newSticker.points}
-                    onChange={(e) => setNewSticker((s) => ({ ...s, points: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700 mb-1" htmlFor="sticker-order">Orden</label>
-                  <input
-                    id="sticker-order"
-                    type="number"
-                    className="w-full border rounded-lg px-3 py-2"
-                    value={newSticker.order}
-                    onChange={(e) => setNewSticker((s) => ({ ...s, order: e.target.value }))}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="md:col-span-2">
-                  <label className="block text-sm text-gray-700 mb-1" htmlFor="sticker-desc">Descripción</label>
-                  <textarea
-                    id="sticker-desc"
-                    className="w-full border rounded-lg px-3 py-2"
-                    rows={2}
-                    value={newSticker.description}
-                    onChange={(e) => setNewSticker((s) => ({ ...s, description: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700 mb-1" htmlFor="sticker-rarity">Rareza</label>
-                  <input
-                    id="sticker-rarity"
-                    type="text"
-                    className="w-full border rounded-lg px-3 py-2"
-                    placeholder="común, raro..."
-                    value={newSticker.rarity}
-                    onChange={(e) => setNewSticker((s) => ({ ...s, rarity: e.target.value }))}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-700 mb-1" htmlFor="sticker-image">Imagen *</label>
-                <input
-                  id="sticker-image"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) =>
-                    setNewSticker((s) => ({
-                      ...s,
-                      image: e.target.files?.[0] || null,
-                    }))
-                  }
-                />
-                {newSticker.image && (
-                  <p className="text-xs text-gray-500 mt-1">Seleccionado: {newSticker.image.name}</p>
-                )}
-              </div>
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleCreateSticker}
-                  disabled={creatingSticker}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-60"
-                >
-                  {creatingSticker ? "Guardando..." : "Crear sticker"}
-                </button>
-              </div>
-            </div>
+            </>
           )}
-          {user?.is_staff && editingSticker && (
-            <div className="bg-white rounded-xl shadow p-4 mb-6 space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="text-lg font-semibold text-gray-800">Editar sticker</h4>
-                <button
-                  className="text-sm text-gray-500 hover:text-gray-700"
-                  onClick={() => setEditingSticker(null)}
-                  type="button"
-                >
-                  Cerrar
-                </button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-700 mb-1" htmlFor="edit-sticker-name">Nombre *</label>
-                  <input
-                    id="edit-sticker-name"
-                    type="text"
-                    className="w-full border rounded-lg px-3 py-2"
-                    value={editingData.name}
-                    onChange={(e) => setEditingData((s) => ({ ...s, name: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700 mb-1" htmlFor="edit-sticker-points">Puntos</label>
-                  <input
-                    id="edit-sticker-points"
-                    type="number"
-                    className="w-full border rounded-lg px-3 py-2"
-                    value={editingData.points}
-                    onChange={(e) => setEditingData((s) => ({ ...s, points: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700 mb-1" htmlFor="edit-sticker-order">Orden</label>
-                  <input
-                    id="edit-sticker-order"
-                    type="number"
-                    className="w-full border rounded-lg px-3 py-2"
-                    value={editingData.order}
-                    onChange={(e) => setEditingData((s) => ({ ...s, order: e.target.value }))}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="md:col-span-2">
-                  <label className="block text-sm text-gray-700 mb-1" htmlFor="edit-sticker-desc">Descripción</label>
-                  <textarea
-                    id="edit-sticker-desc"
-                    className="w-full border rounded-lg px-3 py-2"
-                    rows={2}
-                    value={editingData.description}
-                    onChange={(e) => setEditingData((s) => ({ ...s, description: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700 mb-1" htmlFor="edit-sticker-rarity">Rareza</label>
-                  <input
-                    id="edit-sticker-rarity"
-                    type="text"
-                    className="w-full border rounded-lg px-3 py-2"
-                    placeholder="común, raro..."
-                    value={editingData.rarity}
-                    onChange={(e) => setEditingData((s) => ({ ...s, rarity: e.target.value }))}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-700 mb-1" htmlFor="edit-sticker-image">Imagen (opcional)</label>
-                <input
-                  id="edit-sticker-image"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) =>
-                    setEditingData((s) => ({
-                      ...s,
-                      image: e.target.files?.[0] || null,
-                    }))
-                  }
-                />
-                {editingData.image && (
-                  <p className="text-xs text-gray-500 mt-1">Seleccionado: {editingData.image.name}</p>
-                )}
-              </div>
-              <div className="flex justify-end gap-3">
-                <button
-                  type="button"
-                  className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300"
-                  onClick={() => setEditingSticker(null)}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={handleUpdateSticker}
-                  disabled={updatingSticker}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-60"
-                >
-                  {updatingSticker ? "Guardando..." : "Guardar cambios"}
-                </button>
-              </div>
-            </div>
-          )}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 place-items-center">
+
+          <img
+            src={cover}
+            alt={album.title}
+            className="w-full max-w-4xl mx-auto rounded-xl mt-6 shadow-lg object-cover max-h-64"
+          />
+        </div>
+      </header>
+
+      {/* CONTENIDO */}
+      <main className="flex-1 py-10">
+        {/* PROGRESO */}
+        <section className="max-w-5xl mx-auto mb-10">
+          <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-4">
+            Tu progreso
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
             {album.stickers.map((sticker) => {
               const isLocked = sticker.is_unlocked === false;
               const showLockedState = isLocked && !user?.is_staff;
 
               return (
-                <div key={sticker.id} className="inline-flex flex-col items-center gap-1">
+                <div
+                  key={sticker.id}
+                  className="flex flex-col items-center gap-1"
+                >
                   <Link
                     to={`/app/stickers/${sticker.id}`}
-                    className="relative inline-flex items-center justify-center h-32 md:h-40 w-32 md:w-40"
+                    className={`relative flex h-28 w-28 md:h-32 md:w-32 items-center justify-center rounded-xl bg-white shadow transition-transform hover:-translate-y-1 ${
+                      !showLockedState && "border-4 border-green-500"
+                    }`}
                   >
-                    {/* Imagen real solo visible para admins o desbloqueados */}
                     {sticker.image_reference && (
                       <img
                         src={resolveMediaUrl(sticker.image_reference) || ""}
                         alt={sticker.name}
                         className={
                           showLockedState
-                            ? "h-full w-full object-contain opacity-0"
-                            : "h-full w-full object-contain"
+                            ? "h-20 w-20 object-contain opacity-0"
+                            : "h-20 w-20 object-contain"
                         }
                       />
                     )}
 
-                    {/* Overlay de bloqueado solo para no-admins con sticker bloqueado */}
                     {showLockedState && (
                       <>
-                        <div className="absolute inset-0 rounded-lg bg-black/90 pointer-events-none" />
-                        <img
-                          src="/bloqueado.png"
-                          alt="Sticker bloqueado"
-                          className="pointer-events-none absolute w-36 md:w-44 rotate-6 drop-shadow-xl"
-                        />
+                        <div className="absolute inset-0 rounded-xl bg-gray-100 flex items-center justify-center">
+                          <span className="text-2xl">🔒</span>
+                        </div>
                       </>
                     )}
                   </Link>
 
+                  <p className="text-xs md:text-sm text-center text-gray-700 max-w-[7rem] truncate">
+                    {showLockedState ? "Desbloquear..." : sticker.name}
+                  </p>
+
                   {user?.is_staff && (
                     <button
                       type="button"
-                      className="text-xs text-blue-600 hover:underline"
+                      className="text-[11px] text-blue-600 hover:underline"
                       onClick={() => startEditSticker(sticker)}
                     >
                       Editar
@@ -529,13 +368,349 @@ export default function AlbumDetail() {
             })}
           </div>
         </section>
+
+        {/* DESCRIPCIÓN */}
+        <section className="max-w-5xl mx-auto mb-16">
+          <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-2">
+            Descripción del Álbum
+          </h2>
+          <p className="text-gray-600 leading-relaxed">
+            {album.description ||
+              "En este álbum podrás coleccionar stickers relacionados con este tema."}
+          </p>
+        </section>
       </main>
 
+      {/* MODAL: NUEVO STICKER */}
+      {user?.is_staff && showCreateSticker && (
+        <div className="fixed inset-0 z-40 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 space-y-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-semibold text-gray-800">
+                Nuevo sticker
+              </h3>
+              <button
+                className="text-sm text-gray-500 hover:text-gray-700"
+                onClick={() => setShowCreateSticker(false)}
+                type="button"
+              >
+                Cerrar
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label
+                  className="block text-sm text-gray-700 mb-1"
+                  htmlFor="sticker-name"
+                >
+                  Nombre *
+                </label>
+                <input
+                  id="sticker-name"
+                  type="text"
+                  className="w-full border rounded-lg px-3 py-2"
+                  value={newSticker.name}
+                  onChange={(e) =>
+                    setNewSticker((s) => ({ ...s, name: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <label
+                  className="block text-sm text-gray-700 mb-1"
+                  htmlFor="sticker-points"
+                >
+                  Puntos
+                </label>
+                <input
+                  id="sticker-points"
+                  type="number"
+                  className="w-full border rounded-lg px-3 py-2"
+                  value={newSticker.points}
+                  onChange={(e) =>
+                    setNewSticker((s) => ({ ...s, points: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <label
+                  className="block text-sm text-gray-700 mb-1"
+                  htmlFor="sticker-order"
+                >
+                  Orden
+                </label>
+                <input
+                  id="sticker-order"
+                  type="number"
+                  className="w-full border rounded-lg px-3 py-2"
+                  value={newSticker.order}
+                  onChange={(e) =>
+                    setNewSticker((s) => ({ ...s, order: e.target.value }))
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2">
+                <label
+                  className="block text-sm text-gray-700 mb-1"
+                  htmlFor="sticker-desc"
+                >
+                  Descripción
+                </label>
+                <textarea
+                  id="sticker-desc"
+                  className="w-full border rounded-lg px-3 py-2"
+                  rows={2}
+                  value={newSticker.description}
+                  onChange={(e) =>
+                    setNewSticker((s) => ({
+                      ...s,
+                      description: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div>
+                <label
+                  className="block text-sm text-gray-700 mb-1"
+                  htmlFor="sticker-rarity"
+                >
+                  Rareza
+                </label>
+                <input
+                  id="sticker-rarity"
+                  type="text"
+                  className="w-full border rounded-lg px-3 py-2"
+                  placeholder="común, raro..."
+                  value={newSticker.rarity}
+                  onChange={(e) =>
+                    setNewSticker((s) => ({ ...s, rarity: e.target.value }))
+                  }
+                />
+              </div>
+            </div>
+
+            <div>
+              <label
+                className="block text-sm text-gray-700 mb-1"
+                htmlFor="sticker-image"
+              >
+                Imagen *
+              </label>
+              <input
+                id="sticker-image"
+                type="file"
+                accept="image/*"
+                onChange={(e) =>
+                  setNewSticker((s) => ({
+                    ...s,
+                    image: e.target.files?.[0] || null,
+                  }))
+                }
+              />
+              {newSticker.image && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Seleccionado: {newSticker.image.name}
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300"
+                onClick={() => setShowCreateSticker(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateSticker}
+                disabled={creatingSticker}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-60"
+              >
+                {creatingSticker ? "Guardando..." : "Crear sticker"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDITAR STICKER */}
+      {user?.is_staff && showEditStickerModal && editingSticker && (
+        <div className="fixed inset-0 z-40 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 space-y-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-semibold text-gray-800">
+                Editar sticker
+              </h3>
+              <button
+                className="text-sm text-gray-500 hover:text-gray-700"
+                onClick={() => {
+                  setShowEditStickerModal(false);
+                  setEditingSticker(null);
+                }}
+                type="button"
+              >
+                Cerrar
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label
+                  className="block text-sm text-gray-700 mb-1"
+                  htmlFor="edit-sticker-name"
+                >
+                  Nombre *
+                </label>
+                <input
+                  id="edit-sticker-name"
+                  type="text"
+                  className="w-full border rounded-lg px-3 py-2"
+                  value={editingData.name}
+                  onChange={(e) =>
+                    setEditingData((s) => ({ ...s, name: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <label
+                  className="block text-sm text-gray-700 mb-1"
+                  htmlFor="edit-sticker-points"
+                >
+                  Puntos
+                </label>
+                <input
+                  id="edit-sticker-points"
+                  type="number"
+                  className="w-full border rounded-lg px-3 py-2"
+                  value={editingData.points}
+                  onChange={(e) =>
+                    setEditingData((s) => ({ ...s, points: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <label
+                  className="block text-sm text-gray-700 mb-1"
+                  htmlFor="edit-sticker-order"
+                >
+                  Orden
+                </label>
+                <input
+                  id="edit-sticker-order"
+                  type="number"
+                  className="w-full border rounded-lg px-3 py-2"
+                  value={editingData.order}
+                  onChange={(e) =>
+                    setEditingData((s) => ({ ...s, order: e.target.value }))
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2">
+                <label
+                  className="block text-sm text-gray-700 mb-1"
+                  htmlFor="edit-sticker-desc"
+                >
+                  Descripción
+                </label>
+                <textarea
+                  id="edit-sticker-desc"
+                  className="w-full border rounded-lg px-3 py-2"
+                  rows={2}
+                  value={editingData.description}
+                  onChange={(e) =>
+                    setEditingData((s) => ({
+                      ...s,
+                      description: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div>
+                <label
+                  className="block text-sm text-gray-700 mb-1"
+                  htmlFor="edit-sticker-rarity"
+                >
+                  Rareza
+                </label>
+                <input
+                  id="edit-sticker-rarity"
+                  type="text"
+                  className="w-full border rounded-lg px-3 py-2"
+                  placeholder="común, raro..."
+                  value={editingData.rarity}
+                  onChange={(e) =>
+                    setEditingData((s) => ({ ...s, rarity: e.target.value }))
+                  }
+                />
+              </div>
+            </div>
+
+            <div>
+              <label
+                className="block text-sm text-gray-700 mb-1"
+                htmlFor="edit-sticker-image"
+              >
+                Imagen (opcional)
+              </label>
+              <input
+                id="edit-sticker-image"
+                type="file"
+                accept="image/*"
+                onChange={(e) =>
+                  setEditingData((s) => ({
+                    ...s,
+                    image: e.target.files?.[0] || null,
+                  }))
+                }
+              />
+              {editingData.image && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Seleccionado: {editingData.image.name}
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300"
+                onClick={() => {
+                  setShowEditStickerModal(false);
+                  setEditingSticker(null);
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleUpdateSticker}
+                disabled={updatingSticker}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-60"
+              >
+                {updatingSticker ? "Guardando..." : "Guardar cambios"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDITAR ÁLBUM (IGUAL QUE YA TENÍAS) */}
       {user?.is_staff && showEditAlbum && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b">
-              <h3 className="text-xl font-semibold text-gray-800">Editar álbum</h3>
+              <h3 className="text-xl font-semibold text-gray-800">
+                Editar álbum
+              </h3>
               <button
                 onClick={() => setShowEditAlbum(false)}
                 className="text-gray-500 hover:text-gray-700 text-sm"
@@ -546,7 +721,12 @@ export default function AlbumDetail() {
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-gray-700 mb-2" htmlFor="album-title">Título *</label>
+                  <label
+                    className="block text-gray-700 mb-2"
+                    htmlFor="album-title"
+                  >
+                    Título *
+                  </label>
                   <input
                     id="album-title"
                     type="text"
@@ -556,7 +736,12 @@ export default function AlbumDetail() {
                   />
                 </div>
                 <div>
-                  <label className="block text-gray-700 mb-2" htmlFor="album-theme">Tema</label>
+                  <label
+                    className="block text-gray-700 mb-2"
+                    htmlFor="album-theme"
+                  >
+                    Tema
+                  </label>
                   <input
                     id="album-theme"
                     type="text"
@@ -568,7 +753,12 @@ export default function AlbumDetail() {
               </div>
 
               <div className="mt-4">
-                <label className="block text-gray-700 mb-2" htmlFor="album-description">Descripción</label>
+                <label
+                  className="block text-gray-700 mb-2"
+                  htmlFor="album-description"
+                >
+                  Descripción
+                </label>
                 <textarea
                   id="album-description"
                   rows={4}
@@ -590,7 +780,10 @@ export default function AlbumDetail() {
                   <span>Es premium</span>
                 </label>
                 <div>
-                  <label className="block text-gray-700 mb-2" htmlFor="album-price">
+                  <label
+                    className="block text-gray-700 mb-2"
+                    htmlFor="album-price"
+                  >
                     Precio (opcional)
                   </label>
                   <input
@@ -605,7 +798,12 @@ export default function AlbumDetail() {
               </div>
 
               <div className="mt-4">
-                <label className="block text-gray-700 mb-2" htmlFor="album-cover">Portada (opcional)</label>
+                <label
+                  className="block text-gray-700 mb-2"
+                  htmlFor="album-cover"
+                >
+                  Portada (opcional)
+                </label>
                 <input
                   id="album-cover"
                   type="file"
@@ -614,7 +812,9 @@ export default function AlbumDetail() {
                   onChange={(e) => setAlbumCover(e.target.files?.[0] || null)}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  {albumCover ? `Archivo seleccionado: ${albumCover.name}` : "Si no cargas archivo, se mantiene la portada actual."}
+                  {albumCover
+                    ? `Archivo seleccionado: ${albumCover.name}`
+                    : "Si no cargas archivo, se mantiene la portada actual."}
                 </p>
               </div>
 
@@ -656,7 +856,10 @@ export default function AlbumDetail() {
                       setShowEditAlbum(false);
                       setAlbumCover(null);
                     } catch (err: any) {
-                      console.error("ALBUM_UPDATE_MODAL_ERROR", err?.response?.data || err);
+                      console.error(
+                        "ALBUM_UPDATE_MODAL_ERROR",
+                        err?.response?.data || err,
+                      );
                       error("No pudimos actualizar el álbum.");
                     } finally {
                       setSavingAlbum(false);
