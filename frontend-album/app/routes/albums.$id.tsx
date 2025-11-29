@@ -61,6 +61,8 @@ export default function AlbumDetail() {
   const captureInputRef = useRef<HTMLInputElement | null>(null);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [unlockedSticker, setUnlockedSticker] = useState<Sticker | null>(null);
+  const [unlockNote, setUnlockNote] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
 
   const { error, success } = useToast();
   const user = useUserStore((s) => s.user);
@@ -209,6 +211,7 @@ export default function AlbumDetail() {
       } else {
         setUnlockedSticker(result.sticker || null);
         setShowUnlockModal(true);
+        setUnlockNote("");
         const updated = await AlbumsAPI.get(String(album.id));
         setAlbum(updated);
       }
@@ -236,6 +239,9 @@ export default function AlbumDetail() {
   const unlockedCount = album.stickers.filter(
     (s) => s.is_unlocked,
   ).length;
+  const funFactModal =
+    (unlockedSticker as any)?.fun_fact ||
+    "Próximamente aquí aparecerá un dato curioso del modelo. Dejé listo el bloque para leerlo desde el backend (ej. campo fun_fact).";
 
   return (
     <div className="bg-gray-100 font-sans min-h-screen flex flex-col">
@@ -886,7 +892,7 @@ export default function AlbumDetail() {
                 <img
                   src={resolveMediaUrl(unlockedSticker.image_reference) || ""}
                   alt={unlockedSticker.name}
-                  className="w-full max-w-md rounded-2xl shadow-lg object-cover"
+                  className="max-h-56 w-auto rounded-2xl shadow-lg object-contain"
                 />
               )}
               <div className="text-center space-y-2">
@@ -900,14 +906,55 @@ export default function AlbumDetail() {
               <div className="w-full max-w-md mt-2 bg-yellow-50 border border-yellow-200 rounded-2xl px-4 py-3 flex gap-3 items-start">
                 <span className="text-yellow-500 text-xl">💡</span>
                 <p className="text-sm text-yellow-900">
-                  Próximamente aquí aparecerá un dato curioso del modelo. Dejé listo el bloque para leerlo desde el backend (ej. campo fun_fact).
+                  {funFactModal}
                 </p>
               </div>
+              <div className="w-full max-w-md">
+                <label className="block text-sm font-semibold text-gray-800 mb-2" htmlFor="unlock-note">
+                  ¿Cómo encontraste este logro?
+                </label>
+                <textarea
+                  id="unlock-note"
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  rows={3}
+                  value={unlockNote}
+                  onChange={(e) => setUnlockNote(e.target.value)}
+                  placeholder="Comparte cómo conseguiste este sticker..."
+                />
+              </div>
+              <button
+                type="button"
+                disabled={savingNote || !unlockNote.trim()}
+                onClick={() => {
+                  if (!unlockedSticker) return;
+                  setSavingNote(true);
+                  StickersAPI.saveMessage(unlockedSticker.id, unlockNote.trim())
+                    .then(() => {
+                      setUnlockedSticker({ ...unlockedSticker, user_message: unlockNote.trim() } as Sticker);
+                      success("Mensaje guardado");
+                      setShowUnlockModal(false);
+                      setUnlockNote("");
+                      return AlbumsAPI.get(String(album.id));
+                    })
+                    .then((updated) => {
+                      if (updated) setAlbum(updated);
+                    })
+                    .catch((err) => {
+                      console.error("SAVE_MESSAGE_ERROR", err?.response?.data || err);
+                      error("No pudimos guardar tu mensaje.");
+                    })
+                    .finally(() => setSavingNote(false));
+                }}
+                className="mt-2 bg-white text-blue-700 px-6 py-2.5 rounded-full text-sm font-medium hover:bg-blue-50 shadow-md disabled:opacity-50 border border-blue-100"
+              >
+                {savingNote ? "Guardando..." : "Guardar mensaje"}
+              </button>
               <button
                 type="button"
                 onClick={() => {
                   setShowUnlockModal(false);
                   setUnlockedSticker(null);
+                  setUnlockNote("");
                 }}
                 className="mt-2 mb-1 bg-blue-600 text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-blue-700 shadow-md"
               >

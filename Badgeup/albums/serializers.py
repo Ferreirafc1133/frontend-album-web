@@ -9,6 +9,13 @@ class StickerSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(source="image_reference", required=False, allow_null=True)
     is_unlocked = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
+    unlocked_photo_url = serializers.SerializerMethodField()
+    user_message = serializers.SerializerMethodField()
+    fun_fact = serializers.SerializerMethodField()
+    unlocked_at = serializers.SerializerMethodField()
+    location_label = serializers.SerializerMethodField()
+    album_title = serializers.CharField(source="album.title", read_only=True)
+    album_id = serializers.IntegerField(source="album.id", read_only=True)
 
     class Meta:
         model = Sticker
@@ -26,6 +33,13 @@ class StickerSerializer(serializers.ModelSerializer):
             "rarity",
             "is_unlocked",
             "status",
+            "unlocked_photo_url",
+            "user_message",
+            "fun_fact",
+            "unlocked_at",
+            "location_label",
+            "album_title",
+            "album_id",
         )
         read_only_fields = ("album",)
 
@@ -44,6 +58,37 @@ class StickerSerializer(serializers.ModelSerializer):
             return None
         capture = obj.user_stickers.filter(user=request.user).first()
         return capture.status if capture else None
+
+    def _get_user_sticker(self, obj):
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if not user or not user.is_authenticated:
+            return None
+        return obj.user_stickers.filter(user=user).first()
+
+    def get_unlocked_photo_url(self, obj):
+        us = self._get_user_sticker(obj)
+        if us and us.unlocked_photo:
+            request = self.context.get("request")
+            url = us.unlocked_photo.url
+            return request.build_absolute_uri(url) if request else url
+        return None
+
+    def get_user_message(self, obj):
+        us = self._get_user_sticker(obj)
+        return us.user_message if us and us.user_message else None
+
+    def get_fun_fact(self, obj):
+        us = self._get_user_sticker(obj)
+        return us.fun_fact if us and us.fun_fact else None
+
+    def get_unlocked_at(self, obj):
+        us = self._get_user_sticker(obj)
+        return us.unlocked_at.isoformat() if us and us.unlocked_at else None
+
+    def get_location_label(self, obj):
+        us = self._get_user_sticker(obj)
+        return us.location_label or None if us else None
 
 
 class AlbumSerializer(serializers.ModelSerializer):

@@ -74,12 +74,10 @@ class MatchAlbumPhotoView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
-        if not settings.USE_OPENAI_STICKER_VALIDATION:
+        if not settings.USE_OPENAI_STICKER_VALIDATION or not settings.OPENAI_API_KEY:
             return Response(
-                {
-                    "unlocked": False,
-                    "message": "Validación por IA deshabilitada",
-                }
+                {"unlocked": False, "message": "Validación por IA deshabilitada."},
+                status=status.HTTP_200_OK,
             )
 
         album = get_object_or_404(Album.objects.prefetch_related("stickers"), pk=pk)
@@ -87,62 +85,91 @@ class MatchAlbumPhotoView(APIView):
 
         photo = request.FILES.get("photo")
         if not photo:
-            return Response({"detail": "Se requiere un archivo 'photo'."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Debes enviar una foto en el campo 'photo'."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         result = analyze_car_photo(photo, stickers)
-        if result.get("error"):
+        if not result:
             return Response(
                 {
                     "unlocked": False,
-                    "message": "No pudimos validar la foto en este momento.",
-                    "reason": result.get("error"),
-                }
+                    "message": "No pudimos analizar la foto. Intenta de nuevo.",
+                },
+                status=status.HTTP_200_OK,
             )
 
-        sticker_id = result.get("sticker_id")
+        recognized = bool(result.get("recognized"))
         confidence = float(result.get("confidence") or 0)
+        sticker_id = result.get("sticker_id")
+        fun_fact = result.get("fun_fact") or ""
+        reason = result.get("reason") or ""
         car_info = {
             "make": result.get("make"),
             "model": result.get("model"),
             "generation": result.get("generation"),
             "year_range": result.get("year_range"),
         }
-        reason = result.get("reason")
 
-        if not sticker_id or confidence < 0.6:
+        if not recognized:
             return Response(
                 {
                     "unlocked": False,
-                    "match_score": confidence,
+                    "message": fun_fact or "Uy, esta foto no parece un coche reconocible.",
                     "car": car_info,
                     "reason": reason,
-                    "message": "No encontramos ningún sticker que coincida con esta foto.",
-                }
+                    "fun_fact": fun_fact,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        if not sticker_id:
+            msg = (
+                "Detectamos un coche "
+                f"{car_info.get('make') or ''} {car_info.get('model') or ''}".strip()
+                + ", pero aún no existe un sticker para este modelo en este álbum."
+            )
+            return Response(
+                {
+                    "unlocked": False,
+                    "message": msg,
+                    "car": car_info,
+                    "reason": reason,
+                    "fun_fact": fun_fact,
+                },
+                status=status.HTTP_200_OK,
             )
 
         try:
-            sticker = next(s for s in stickers if s.id == sticker_id)
-        except StopIteration:
+            sticker = album.stickers.get(pk=sticker_id)
+        except Sticker.DoesNotExist:
             return Response(
                 {
                     "unlocked": False,
-                    "match_score": confidence,
+                    "message": "El sticker sugerido por la IA no pertenece a este álbum.",
                     "car": car_info,
                     "reason": reason,
-                    "message": "No encontramos ningún sticker que coincida con esta foto.",
-                }
+                    "fun_fact": fun_fact,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        if confidence < 0.6:
+            return Response(
+                {
+                    "unlocked": False,
+                    "message": "La IA no está lo suficientemente segura para desbloquear este sticker.",
+                    "car": car_info,
+                    "reason": reason,
+                    "fun_fact": fun_fact,
+                },
+                status=status.HTTP_200_OK,
             )
 
         user_sticker, created = UserSticker.objects.get_or_create(
             user=request.user,
             sticker=sticker,
-            defaults={
-                "status": UserSticker.STATUS_APPROVED,
-                "validated": True,
-                "validated_at": timezone.now(),
-                "validation_score": confidence,
-                "validation_notes": reason,
-            },
         )
 
         try:
@@ -151,28 +178,34 @@ class MatchAlbumPhotoView(APIView):
             pass
 
         already_validated = user_sticker.validated if not created else False
-        user_sticker.photo = photo
+        user_sticker.unlocked_photo = photo
+        user_sticker.unlocked_at = user_sticker.unlocked_at or timezone.now()
+        user_sticker.validation_score = confidence
+        user_sticker.validation_notes = reason
+        user_sticker.detected_make = car_info.get("make") or ""
+        user_sticker.detected_model = car_info.get("model") or ""
+        user_sticker.detected_generation = car_info.get("generation") or ""
+        user_sticker.detected_year_range = car_info.get("year_range") or ""
+        user_sticker.fun_fact = fun_fact or user_sticker.fun_fact
 
-        if not created:
-            user_sticker.status = UserSticker.STATUS_APPROVED
-            user_sticker.validated = True
-            user_sticker.validated_at = timezone.now()
-            user_sticker.validation_score = confidence
-            user_sticker.validation_notes = reason
-            user_sticker.save(
-                update_fields=[
-                    "status",
-                    "validated",
-                    "validated_at",
-                    "validation_score",
-                    "validation_notes",
-                    "photo",
-                    "updated_at",
-                ]
-            )
-        else:
-            user_sticker.photo = photo
-            user_sticker.save(update_fields=["photo", "updated_at"])
+        user_sticker.status = UserSticker.STATUS_APPROVED
+        user_sticker.validated = True
+        user_sticker.save(
+            update_fields=[
+                "unlocked_photo",
+                "unlocked_at",
+                "validation_score",
+                "validation_notes",
+                "detected_make",
+                "detected_model",
+                "detected_generation",
+                "detected_year_range",
+                "fun_fact",
+                "status",
+                "validated",
+                "updated_at",
+            ]
+        )
 
         if not already_validated:
             reward = sticker.reward_points
@@ -180,7 +213,9 @@ class MatchAlbumPhotoView(APIView):
                 points=F("points") + reward
             )
 
-        serializer = StickerSerializer(sticker, context={"request": request})
+        serializer = StickerSerializer(
+            sticker, context={"request": request, "user": request.user}
+        )
         return Response(
             {
                 "unlocked": True,
@@ -188,5 +223,27 @@ class MatchAlbumPhotoView(APIView):
                 "match_score": confidence,
                 "car": car_info,
                 "reason": reason,
-            }
+                "fun_fact": fun_fact,
+            },
+            status=status.HTTP_200_OK,
         )
+
+
+class StickerMessageView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        message = (request.data.get("message") or "").strip()
+        sticker = get_object_or_404(Sticker, pk=pk)
+        user_sticker, _ = UserSticker.objects.get_or_create(
+            user=request.user,
+            sticker=sticker,
+        )
+        user_sticker.user_message = message
+        user_sticker.save(update_fields=["user_message", "updated_at"])
+
+        serializer = StickerSerializer(
+            sticker,
+            context={"request": request, "user": request.user},
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)

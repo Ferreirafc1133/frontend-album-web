@@ -55,51 +55,58 @@ def _sticker_reference_payload(sticker: Sticker) -> Optional[Dict[str, Any]]:
     return None
 
 
-def analyze_car_photo(photo_file, stickers: Iterable[Sticker]) -> dict[str, Any]:
+def analyze_car_photo(photo_file, stickers: Iterable[Sticker]) -> dict[str, Any] | None:
     """
-    Usa OpenAI Vision para identificar un coche en una foto y elegir el sticker que mejor coincide,
-    únicamente con nombres/descripciones de stickers (sin imágenes de referencia).
+    Analiza la foto con OpenAI y regresa un JSON con recognized/make/model/.../fun_fact.
     """
     if not settings.USE_OPENAI_STICKER_VALIDATION:
         return {"error": "validación por IA deshabilitada"}
 
     try:
         client = get_openai_client()
-    except Exception as exc:  # pragma: no cover
+    except Exception:  # pragma: no cover
         logger.exception("No se pudo inicializar el cliente de OpenAI")
-        return {"error": str(exc)}
+        return None
 
-    # Codificar la foto del usuario
     try:
-        encoded = base64.b64encode(photo_file.read()).decode("utf-8")
-        data_url = f"data:image/jpeg;base64,{encoded}"
-    except Exception as exc:
+        raw = photo_file.read()
+        b64 = base64.b64encode(raw).decode("utf-8")
+    except Exception:
         logger.exception("No se pudo leer la foto del usuario")
-        return {"error": f"Foto inválida: {exc}"}
+        return None
     finally:
         try:
             photo_file.seek(0)
         except Exception:
             pass
 
-    stickers_text_lines = [
-        f"{s.id}: {s.name}" + (f" - {s.description}" if s.description else "")
-        for s in stickers
-    ]
-    stickers_text = "Stickers disponibles:\n" + "\n".join(stickers_text_lines)
+    stickers_text = "\n".join(
+        f"- ID {s.id}: {s.name} — {s.description or ''}" for s in stickers
+    ) or "No hay stickers en este álbum."
 
     system_msg = (
-        "Eres un experto en autos. Te doy una foto de un coche real y una lista de stickers (id, nombre, descripción). "
-        "Solo con tu conocimiento y esa lista, identifica marca, modelo, generación o versión, rango aproximado de años, "
-        "y elige qué sticker coincide mejor. Responde SOLO un JSON con: "
-        '{ "make": str, "model": str, "generation": str|null, "year_range": str|null, '
-        '"confidence": float 0-1, "sticker_id": int|null, "reason": str }.'
+        "Eres un experto en autos. Recibes UNA foto y una lista de stickers de un álbum (solo texto). "
+        "Debes identificar el coche usando SOLO la foto y tu conocimiento, y luego decidir si alguno de los stickers coincide.\n\n"
+        "Responde SIEMPRE un JSON válido con este esquema EXACTO:\n"
+        "{\n"
+        '  \"recognized\": boolean,            # true si es claramente un coche identificable\n'
+        '  \"make\": string|null,\n'
+        '  \"model\": string|null,\n'
+        '  \"generation\": string|null,\n'
+        '  \"year_range\": string|null,\n'
+        '  \"confidence\": number,            # 0-1 sobre el match con UN sticker del álbum\n'
+        '  \"sticker_id\": number|null,       # ID de la lista de stickers, o null si no hay sticker para este coche\n'
+        '  \"reason\": string,                # explica por qué elegiste ese sticker o por qué no hay match\n'
+        '  \"fun_fact\": string               # un dato curioso corto sobre ese modelo; si no es un coche, un mensaje tipo \"no es un coche\"\n'
+        "}\n"
+        "Si NO es un coche (o no estás seguro), usa recognized=false, deja make/model/generation/year_range en null, "
+        "sticker_id=null, confidence=0, y en fun_fact pon un mensaje divertido tipo \"Uy, esto no parece un coche.\""
     )
 
     user_text = (
-        "Lista de stickers disponibles:\n"
+        "Lista de stickers disponibles en el álbum:\n"
         f"{stickers_text}\n\n"
-        "Ahora te mando la foto del coche. Usa solo tu conocimiento y los nombres/descripciones de los stickers para decidir cuál corresponde."
+        "Analiza la foto y devuelve SOLO el JSON, sin texto extra."
     )
 
     try:
@@ -107,43 +114,36 @@ def analyze_car_photo(photo_file, stickers: Iterable[Sticker]) -> dict[str, Any]
             model="gpt-4.1-mini",
             response_format={"type": "json_object"},
             messages=[
-                {
-                    "role": "system",
-                    "content": system_msg,
-                },
+                {"role": "system", "content": system_msg},
                 {
                     "role": "user",
                     "content": [
-                        {
-                            "type": "text",
-                            "text": user_text,
-                        },
+                        {"type": "text", "text": user_text},
                         {
                             "type": "image_url",
-                            "image_url": {"url": data_url},
+                            "image_url": {"url": f"data:image/jpeg;base64,{b64}"},
                         },
                     ],
                 },
             ],
-            max_tokens=300,
+            max_tokens=400,
         )
-        raw_output = completion.choices[0].message.content or ""
-        data = json.loads(raw_output)
-        data.setdefault("sticker_id", None)
-        data.setdefault("confidence", 0)
-        data.setdefault("make", "")
-        data.setdefault("model", "")
-        data.setdefault("generation", None)
-        data.setdefault("year_range", None)
-        data.setdefault("reason", "")
-        data["request_id"] = getattr(completion, "id", None)
-        return data
-    except json.JSONDecodeError as exc:
-        logger.exception("No se pudo parsear la respuesta de OpenAI")
-        return {"error": f"Respuesta inválida de OpenAI: {exc}"}
-    except Exception as exc:  # pragma: no cover - dependiente de API externa
-        logger.exception("Error llamando a OpenAI para análisis de coche")
-        return {"error": str(exc)}
+        raw_content = completion.choices[0].message.content or "{}"
+        data = json.loads(raw_content)
+    except Exception:
+        logger.exception("No se pudo parsear JSON de OpenAI")
+        return None
+
+    data.setdefault("recognized", False)
+    data.setdefault("make", None)
+    data.setdefault("model", None)
+    data.setdefault("generation", None)
+    data.setdefault("year_range", None)
+    data.setdefault("confidence", 0.0)
+    data.setdefault("sticker_id", None)
+    data.setdefault("reason", "")
+    data.setdefault("fun_fact", "")
+    return data
 
 
 def analyze_user_sticker(user_sticker: UserSticker) -> dict[str, Any]:

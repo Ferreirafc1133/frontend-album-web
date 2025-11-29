@@ -84,6 +84,13 @@ export interface Sticker {
   rarity?: string | null;
   is_unlocked?: boolean;
   status?: string | null;
+  unlocked_photo_url?: string | null;
+  user_message?: string | null;
+  fun_fact?: string | null;
+  unlocked_at?: string | null;
+  location_label?: string | null;
+  album_title?: string | null;
+  album_id?: number | null;
 }
 
 export interface AlbumDetail extends AlbumSummary {
@@ -313,6 +320,10 @@ export const StickersAPI = {
     const { data } = await api.patch<Sticker>(`/stickers/${id}/`, form, {
       headers: { "Content-Type": "multipart/form-data" },
     });
+    return data;
+  },
+  async saveMessage(id: number, message: string) {
+    const { data } = await api.post<Sticker>(`/stickers/${id}/message/`, { message });
     return data;
   },
   async unlock(stickerId: number, payload: UnlockStickerPayload) {
