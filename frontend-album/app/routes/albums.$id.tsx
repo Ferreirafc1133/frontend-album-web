@@ -59,6 +59,8 @@ export default function AlbumDetail() {
   const [matchPhotoFile, setMatchPhotoFile] = useState<File | null>(null);
   const [matching, setMatching] = useState(false);
   const captureInputRef = useRef<HTMLInputElement | null>(null);
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [unlockedSticker, setUnlockedSticker] = useState<Sticker | null>(null);
 
   const { error, success } = useToast();
   const user = useUserStore((s) => s.user);
@@ -205,7 +207,8 @@ export default function AlbumDetail() {
           "No encontramos ningún sticker que coincida con esta foto.";
         error(msg);
       } else {
-        success(`Sticker desbloqueado: ${result.sticker?.name || "Sticker"}`);
+        setUnlockedSticker(result.sticker || null);
+        setShowUnlockModal(true);
         const updated = await AlbumsAPI.get(String(album.id));
         setAlbum(updated);
       }
@@ -869,6 +872,47 @@ export default function AlbumDetail() {
                   {savingAlbum ? "Guardando..." : "Guardar cambios"}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showUnlockModal && unlockedSticker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="relative w-full max-w-xl bg-[#f5f9ff] rounded-3xl shadow-2xl overflow-hidden">
+            <div className="pointer-events-none absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_10%_20%,#ffd7d7_0,#ffd7d700_45%),radial-gradient(circle_at_80%_30%,#d1f4ff_0,#d1f4ff00_45%),radial-gradient(circle_at_30%_80%,#e4ffd1_0,#e4ffd100_45%)]" />
+            <div className="relative p-8 flex flex-col items-center gap-6">
+              {unlockedSticker.image_reference && (
+                <img
+                  src={resolveMediaUrl(unlockedSticker.image_reference) || ""}
+                  alt={unlockedSticker.name}
+                  className="w-full max-w-md rounded-2xl shadow-lg object-cover"
+                />
+              )}
+              <div className="text-center space-y-2">
+                <h2 className="text-3xl font-extrabold text-blue-700">¡Sticker desbloqueado!</h2>
+                <p className="text-xl font-semibold text-gray-900">{unlockedSticker.name}</p>
+                <p className="text-sm text-gray-600 max-w-md mx-auto">
+                  Has conseguido este sticker al capturar una foto real validada por nuestro equipo de philipinos en vivo. ¡Otro paso más para completar tu álbum de{" "}
+                  <span className="font-semibold">{album.title}</span>! 🚗✨
+                </p>
+              </div>
+              <div className="w-full max-w-md mt-2 bg-yellow-50 border border-yellow-200 rounded-2xl px-4 py-3 flex gap-3 items-start">
+                <span className="text-yellow-500 text-xl">💡</span>
+                <p className="text-sm text-yellow-900">
+                  Próximamente aquí aparecerá un dato curioso del modelo. Dejé listo el bloque para leerlo desde el backend (ej. campo fun_fact).
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowUnlockModal(false);
+                  setUnlockedSticker(null);
+                }}
+                className="mt-2 mb-1 bg-blue-600 text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-blue-700 shadow-md"
+              >
+                ← Volver al Álbum
+              </button>
             </div>
           </div>
         </div>
