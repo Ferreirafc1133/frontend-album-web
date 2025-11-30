@@ -1,5 +1,5 @@
 import type { Route } from "./+types/albums.$id";
-import { Link, useParams } from "react-router";
+import { Link, useParams, useNavigate } from "react-router";
 import { useEffect, useRef, useState } from "react";
 import {
   AlbumsAPI,
@@ -22,6 +22,7 @@ export default function AlbumDetail() {
   const { id } = useParams();
   const [album, setAlbum] = useState<AlbumDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const [creatingSticker, setCreatingSticker] = useState(false);
   const [newSticker, setNewSticker] = useState({
@@ -196,25 +197,53 @@ export default function AlbumDetail() {
     }
   };
 
-  const handleMatchPhoto = async (file: File) => {
-    if (!album) return;
+  const handleMatchPhoto = async (fileParam?: File) => {
+    const fileToUse = fileParam || matchPhotoFile;
+    if (!album || !fileToUse) return;
     try {
       setMatching(true);
-      setMatchPhotoFile(file);
-      const result = await AlbumsAPI.matchPhoto(album.id, file);
 
+      const result = await AlbumsAPI.matchPhoto(album.id, fileToUse);
+
+      // limpiar selección siempre
+      setMatchPhotoFile(null);
+      if (captureInputRef.current) {
+        captureInputRef.current.value = "";
+      }
+
+      // no hubo match
       if (!result.unlocked) {
         const msg =
           result.message ||
           "No encontramos ningún sticker que coincida con esta foto.";
         error(msg);
-      } else {
-        setUnlockedSticker(result.sticker || null);
-        setShowUnlockModal(true);
-        setUnlockNote("");
-        const updated = await AlbumsAPI.get(String(album.id));
-        setAlbum(updated);
+        return;
       }
+
+      const sticker = result.sticker;
+
+      // refrescar en segundo plano
+      AlbumsAPI.get(String(album.id))
+        .then((updated) => setAlbum(updated))
+        .catch((e) => console.error("REFETCH_ALBUM_ERROR", e));
+
+      // ya estaba desbloqueado
+      if (result.already_unlocked) {
+        success(result.reason || "Ya habías desbloqueado este sticker.");
+        if (sticker?.id) {
+          navigate(`/app/stickers/${sticker.id}`);
+        }
+        setShowUnlockModal(false);
+        setUnlockedSticker(null);
+        setUnlockNote("");
+        return;
+      }
+
+      // nuevo desbloqueo
+      success(`Sticker desbloqueado: ${sticker?.name || "Sticker"}`);
+      setUnlockedSticker(sticker || null);
+      setShowUnlockModal(true);
+      setUnlockNote("");
     } catch (err: any) {
       console.error("MATCH_PHOTO_ERROR", err?.response?.data || err);
       error("No pudimos procesar tu foto. Intenta de nuevo.");
@@ -292,18 +321,14 @@ export default function AlbumDetail() {
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={async (e) => {
+                onChange={(e) => {
                   const file = e.target.files?.[0] || null;
+                  setMatchPhotoFile(file);
                   if (file) {
-                    await handleMatchPhoto(file);
+                    handleMatchPhoto(file);
                   }
                 }}
               />
-              {matchPhotoFile && (
-                <p className="text-xs text-blue-100">
-                  Foto seleccionada: {matchPhotoFile.name}
-                </p>
-              )}
             </>
           )}
 

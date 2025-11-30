@@ -172,12 +172,28 @@ class MatchAlbumPhotoView(APIView):
             sticker=sticker,
         )
 
+        if user_sticker.validated and user_sticker.status == UserSticker.STATUS_APPROVED:
+            serializer = StickerSerializer(
+                sticker, context={"request": request, "user": request.user}
+            )
+            return Response(
+                {
+                    "unlocked": True,
+                    "already_unlocked": True,
+                    "sticker": serializer.data,
+                    "match_score": confidence,
+                    "car": car_info,
+                    "reason": "Ya habías desbloqueado este sticker.",
+                    "fun_fact": fun_fact,
+                },
+                status=status.HTTP_200_OK,
+            )
+
         try:
             photo.seek(0)
         except Exception:
             pass
 
-        already_validated = user_sticker.validated if not created else False
         user_sticker.unlocked_photo = photo
         user_sticker.unlocked_at = user_sticker.unlocked_at or timezone.now()
         user_sticker.validation_score = confidence
@@ -207,7 +223,7 @@ class MatchAlbumPhotoView(APIView):
             ]
         )
 
-        if not already_validated:
+        if not created:
             reward = sticker.reward_points
             type(user_sticker.user).objects.filter(pk=user_sticker.user_id).update(
                 points=F("points") + reward
@@ -219,6 +235,7 @@ class MatchAlbumPhotoView(APIView):
         return Response(
             {
                 "unlocked": True,
+                "already_unlocked": False,
                 "sticker": serializer.data,
                 "match_score": confidence,
                 "car": car_info,

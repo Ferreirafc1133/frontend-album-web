@@ -76,8 +76,8 @@ export default function StickerDetail() {
                 alt={sticker.name}
                 className={
                   showLockedState
-                    ? "max-h-[520px] max-w-full w-auto h-auto object-contain opacity-0"
-                    : "max-h-[520px] max-w-full w-auto h-auto object-contain"
+                    ? "max-h-[70vh] max-w-full w-auto h-auto object-contain opacity-0"
+                    : "max-h-[70vh] max-w-full w-auto h-auto object-contain"
                 }
               />
             </div>

@@ -25,7 +25,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts((t) => t.filter((x) => x.id !== id));
   }, []);
 
-  const add = useCallback((message: string, type: ToastType = "info", duration = 3000) => {
+  const add = useCallback((message: string, type: ToastType = "info", duration = 12000) => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
     setToasts((t) => [...t, { id, message, type, duration }]);
     if (duration > 0) {
@@ -69,7 +69,14 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
 
 export function useToast() {
   const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error("ToastProvider is missing");
+  if (!ctx) {
+    const noop = () => undefined;
+    return {
+      add: noop,
+      success: noop,
+      error: noop,
+      info: noop,
+    };
+  }
   return ctx;
 }
-

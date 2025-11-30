@@ -157,6 +157,7 @@ export type UpdateProfilePayload = Partial<
 
 export type MatchPhotoResult = {
   unlocked: boolean;
+  already_unlocked?: boolean;
   sticker?: Sticker;
   match_score?: number;
   car?: {
