@@ -48,6 +48,8 @@ class UserSticker(models.Model):
     fun_fact = models.TextField(blank=True)
     user_message = models.TextField(blank=True)
     location_label = models.CharField(max_length=255, blank=True)
+    location_lat = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    location_lng = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

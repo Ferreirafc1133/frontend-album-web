@@ -203,7 +203,29 @@ export default function AlbumDetail() {
     try {
       setMatching(true);
 
-      const result = await AlbumsAPI.matchPhoto(album.id, fileToUse);
+      let coords: { lat: number; lng: number } | undefined;
+      if (typeof navigator !== "undefined" && "geolocation" in navigator) {
+        try {
+          coords = await new Promise((resolve) => {
+            navigator.geolocation.getCurrentPosition(
+              (pos) =>
+                resolve({
+                  lat: pos.coords.latitude,
+                  lng: pos.coords.longitude,
+                }),
+              (err) => {
+                console.warn("GEOLOCATION_ERROR", err);
+                resolve(undefined);
+              },
+              { enableHighAccuracy: true, timeout: 8000 },
+            );
+          });
+        } catch (e) {
+          console.warn("GEOLOCATION_PROMISE_ERROR", e);
+        }
+      }
+
+      const result = await AlbumsAPI.matchPhoto(album.id, fileToUse, coords);
 
       // limpiar selección siempre
       setMatchPhotoFile(null);

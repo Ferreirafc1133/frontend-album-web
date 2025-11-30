@@ -14,6 +14,8 @@ class StickerSerializer(serializers.ModelSerializer):
     fun_fact = serializers.SerializerMethodField()
     unlocked_at = serializers.SerializerMethodField()
     location_label = serializers.SerializerMethodField()
+    location_lat = serializers.SerializerMethodField()
+    location_lng = serializers.SerializerMethodField()
     album_title = serializers.CharField(source="album.title", read_only=True)
     album_id = serializers.IntegerField(source="album.id", read_only=True)
 
@@ -38,6 +40,8 @@ class StickerSerializer(serializers.ModelSerializer):
             "fun_fact",
             "unlocked_at",
             "location_label",
+            "location_lat",
+            "location_lng",
             "album_title",
             "album_id",
         )
@@ -89,6 +93,18 @@ class StickerSerializer(serializers.ModelSerializer):
     def get_location_label(self, obj):
         us = self._get_user_sticker(obj)
         return us.location_label or None if us else None
+
+    def get_location_lat(self, obj):
+        us = self._get_user_sticker(obj)
+        if us and us.location_lat is not None:
+            return float(us.location_lat)
+        return float(obj.location_lat) if obj.location_lat is not None else None
+
+    def get_location_lng(self, obj):
+        us = self._get_user_sticker(obj)
+        if us and us.location_lng is not None:
+            return float(us.location_lng)
+        return float(obj.location_lng) if obj.location_lng is not None else None
 
 
 class AlbumSerializer(serializers.ModelSerializer):

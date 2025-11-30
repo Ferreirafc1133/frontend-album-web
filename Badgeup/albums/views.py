@@ -111,6 +111,8 @@ class MatchAlbumPhotoView(APIView):
             "generation": result.get("generation"),
             "year_range": result.get("year_range"),
         }
+        lat = request.data.get("lat")
+        lng = request.data.get("lng")
 
         if not recognized:
             return Response(
@@ -203,6 +205,16 @@ class MatchAlbumPhotoView(APIView):
         user_sticker.detected_generation = car_info.get("generation") or ""
         user_sticker.detected_year_range = car_info.get("year_range") or ""
         user_sticker.fun_fact = fun_fact or user_sticker.fun_fact
+        if lat not in (None, ""):
+            try:
+                user_sticker.location_lat = float(lat)
+            except (TypeError, ValueError):
+                pass
+        if lng not in (None, ""):
+            try:
+                user_sticker.location_lng = float(lng)
+            except (TypeError, ValueError):
+                pass
 
         user_sticker.status = UserSticker.STATUS_APPROVED
         user_sticker.validated = True
@@ -217,6 +229,8 @@ class MatchAlbumPhotoView(APIView):
                 "detected_generation",
                 "detected_year_range",
                 "fun_fact",
+                "location_lat",
+                "location_lng",
                 "status",
                 "validated",
                 "updated_at",

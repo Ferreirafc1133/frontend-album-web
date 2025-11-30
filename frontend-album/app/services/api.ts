@@ -75,8 +75,8 @@ export interface Sticker {
   album: number;
   name: string;
   description: string;
-  location_lat: string | null;
-  location_lng: string | null;
+  location_lat: number | null;
+  location_lng: number | null;
   image_reference: string | null;
   image?: string | null;
   reward_points: number;
@@ -276,9 +276,17 @@ export const AlbumsAPI = {
     const { data } = await api.post<UserSticker>(`/stickers/${stickerId}/unlock/`, { photo_url: photoUrl });
     return data;
   },
-  async matchPhoto(albumId: number | string, photo: File): Promise<MatchPhotoResult> {
+  async matchPhoto(
+    albumId: number | string,
+    photo: File,
+    coords?: { lat: number; lng: number },
+  ): Promise<MatchPhotoResult> {
     const formData = new FormData();
     formData.append("photo", photo);
+    if (coords?.lat != null && coords?.lng != null) {
+      formData.append("lat", String(coords.lat));
+      formData.append("lng", String(coords.lng));
+    }
 
     const resp = await api.post<MatchPhotoResult>(`/albums/${albumId}/match-photo/`, formData, {
       headers: { "Content-Type": "multipart/form-data" },

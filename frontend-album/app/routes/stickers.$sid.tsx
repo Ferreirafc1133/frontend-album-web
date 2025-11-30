@@ -45,6 +45,17 @@ export default function StickerDetail() {
     return <div className="p-10 text-red-500">Sticker no encontrado.</div>;
   }
 
+  const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+  const hasLocation =
+    (sticker as any).location_lat != null &&
+    (sticker as any).location_lng != null &&
+    MAPBOX_TOKEN;
+  const mapUrl = hasLocation
+    ? `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/` +
+      `pin-s+ff0000(${(sticker as any).location_lng},${(sticker as any).location_lat})/` +
+      `${(sticker as any).location_lng},${(sticker as any).location_lat},14,0/600x300?access_token=${MAPBOX_TOKEN}`
+    : undefined;
+
   const photoUrl =
     resolveMediaUrl((sticker as any).unlocked_photo_url || sticker.image_reference) ||
     "https://placehold.co/800x400?text=Sticker";
@@ -60,7 +71,26 @@ export default function StickerDetail() {
     "Pronto verás aquí un dato curioso generado por IA sobre este modelo.";
   const locationLabel =
     (sticker as any).location_label || "Ubicación pendiente";
-  const unlockedAt = (sticker as any).unlocked_at || "Fecha pendiente";
+  const unlockedAtRaw = (sticker as any).unlocked_at || null;
+  const unlockedAt =
+    unlockedAtRaw && typeof unlockedAtRaw === "string"
+      ? (() => {
+          try {
+            const date = new Date(unlockedAtRaw);
+            if (Number.isNaN(date.getTime())) return unlockedAtRaw;
+            return new Intl.DateTimeFormat("es-MX", {
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+              timeZoneName: "short",
+            }).format(date);
+          } catch {
+            return unlockedAtRaw;
+          }
+        })()
+      : "Fecha pendiente";
   const userMessage =
     (sticker as any).user_message ||
     "Aún no has agregado un mensaje para este logro.";
@@ -119,10 +149,19 @@ export default function StickerDetail() {
             </div>
 
             <div className="space-y-1 text-sm text-gray-700">
-              <p>
-                <span className="font-semibold">📍 Ubicación:</span>{" "}
-                {locationLabel}
-              </p>
+              <div className="mt-1">
+                <p>
+                  <span className="font-semibold">📍 Ubicación:</span>{" "}
+                  {hasLocation ? "Ubicación capturada" : locationLabel}
+                </p>
+                {mapUrl && (
+                  <img
+                    src={mapUrl}
+                    alt="Ubicación donde desbloqueaste este sticker"
+                    className="mt-2 rounded-xl border border-gray-200 shadow-sm"
+                  />
+                )}
+              </div>
               <p>
                 <span className="font-semibold">🕒 Fecha y hora:</span>{" "}
                 {unlockedAt}
