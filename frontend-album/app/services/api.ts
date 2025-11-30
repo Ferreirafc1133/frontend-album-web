@@ -93,6 +93,17 @@ export interface Sticker {
   album_id?: number | null;
 }
 
+export interface StickerLocation {
+  sticker_id?: number;
+  sticker_name: string;
+  album_id?: number;
+  album_title: string;
+  username: string;
+  unlocked_at?: string | null;
+  location_lat: number | string | null;
+  location_lng: number | string | null;
+}
+
 export interface AlbumDetail extends AlbumSummary {
   stickers: Sticker[];
 }
@@ -301,6 +312,10 @@ export const StickersAPI = {
       params: { album: albumId },
     });
     return unwrapList<Sticker>(data);
+  },
+  async locations() {
+    const { data } = await api.get<PaginatedResponse<StickerLocation> | StickerLocation[]>("/stickers/locations/");
+    return unwrapList<StickerLocation>(data);
   },
   async create(payload: CreateStickerPayload) {
     const form = new FormData();

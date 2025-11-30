@@ -15,6 +15,7 @@ from .serializers import (
     AlbumDetailSerializer,
     AlbumSerializer,
     StickerCreateSerializer,
+    StickerLocationSerializer,
     StickerSerializer,
 )
 
@@ -68,6 +69,21 @@ class StickerListCreateView(generics.ListCreateAPIView):
     def get_serializer_context(self):
         ctx = super().get_serializer_context()
         return ctx
+
+
+class StickerLocationListView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = StickerLocationSerializer
+
+    def get_queryset(self):
+        return (
+            UserSticker.objects.filter(
+                location_lat__isnull=False,
+                location_lng__isnull=False,
+            )
+            .select_related("sticker__album", "user")
+            .order_by("-unlocked_at")
+        )
 
 
 class MatchAlbumPhotoView(APIView):
