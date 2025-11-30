@@ -22,6 +22,26 @@ export default function WorldMapPage() {
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const { error } = useToast();
 
+  const buildMarkerElement = () => {
+    const el = document.createElement("div");
+    el.textContent = "🚗";
+    Object.assign(el.style, {
+      width: "40px",
+      height: "40px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: "9999px",
+      backgroundColor: "#ffffff",
+      border: "2px solid #2563eb",
+      boxShadow: "0 12px 30px rgba(31, 41, 55, 0.28)",
+      fontSize: "20px",
+      lineHeight: "1",
+      color: "#1f2937",
+    });
+    return el;
+  };
+
   // 1) Traer ubicaciones del backend
   useEffect(() => {
     (async () => {
@@ -80,7 +100,7 @@ export default function WorldMapPage() {
         </div>
       `;
 
-      const marker = new mapboxgl.Marker()
+      const marker = new mapboxgl.Marker({ element: buildMarkerElement(), anchor: "center" })
         .setLngLat([lng, lat])
         .setPopup(new mapboxgl.Popup({ offset: 24 }).setHTML(popupHtml))
         .addTo(map);
