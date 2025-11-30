@@ -359,29 +359,22 @@ export default function AlbumDetail() {
                 >
                   <Link
                     to={`/app/stickers/${sticker.id}`}
-                    className={`relative flex h-28 w-28 md:h-32 md:w-32 items-center justify-center rounded-xl bg-white shadow transition-transform hover:-translate-y-1 ${
-                      !showLockedState && "border-4 border-green-500"
-                    }`}
+                    className="inline-flex flex-col items-center gap-2 group"
                   >
-                    {sticker.image_reference && (
-                      <img
-                        src={resolveMediaUrl(sticker.image_reference) || ""}
-                        alt={sticker.name}
-                        className={
-                          showLockedState
-                            ? "h-20 w-20 object-contain opacity-0"
-                            : "h-20 w-20 object-contain"
-                        }
-                      />
-                    )}
-
-                    {showLockedState && (
-                      <>
-                        <div className="absolute inset-0 rounded-xl bg-gray-100 flex items-center justify-center">
-                          <span className="text-2xl">🔒</span>
-                        </div>
-                      </>
-                    )}
+                    <div className="relative">
+                      {sticker.image_reference && (
+                        <img
+                          src={resolveMediaUrl(sticker.image_reference) || ""}
+                          alt={sticker.name}
+                          className={`h-20 md:h-24 w-auto object-contain transition-transform group-hover:-translate-y-1 ${
+                            showLockedState ? "opacity-40 grayscale" : "drop-shadow"
+                          }`}
+                        />
+                      )}
+                      {showLockedState && (
+                        <span className="absolute inset-0 flex items-center justify-center text-2xl">🔒</span>
+                      )}
+                    </div>
                   </Link>
 
                   <p className="text-xs md:text-sm text-center text-gray-700 max-w-[7rem] truncate">
