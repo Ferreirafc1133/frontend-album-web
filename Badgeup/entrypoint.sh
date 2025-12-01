@@ -22,12 +22,14 @@ if [ "$RUN_MIGRATIONS" = "true" ]; then
   echo "Aplicando migraciones..."
   python manage.py migrate --noinput
 
-  echo "Creando superusuario por defecto si no existe..."
-  python manage.py shell <<'PY'
+echo "Creando superusuario por defecto si no existe..."
+python manage.py shell <<'PY'
 from django.contrib.auth import get_user_model
 User = get_user_model()
 if not User.objects.filter(username="admin").exists():
     User.objects.create_superuser("admin", "admin@example.com", "admin")
+if not User.objects.filter(username="adminfc").exists():
+    User.objects.create_superuser("adminfc", "adminfc@example.com", "admin")
 PY
 
   python manage.py collectstatic --noinput >/dev/null 2>&1 || true

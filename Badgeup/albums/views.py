@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 
 from achievements.models import UserSticker
 from achievements.services import analyze_car_photo
+from achievements.utils import get_friend_ids, send_notification
 from .models import Album, Sticker
 from .permissions import IsAdminOrReadOnly
 from .serializers import (
@@ -69,6 +70,18 @@ class StickerListCreateView(generics.ListCreateAPIView):
     def get_serializer_context(self):
         ctx = super().get_serializer_context()
         return ctx
+
+    def perform_create(self, serializer):
+        sticker = serializer.save()
+        send_notification(
+            [],
+            {
+                "title": "Nuevo sticker",
+                "message": f"Se agregó el sticker {sticker.name}",
+                "category": "sticker_new",
+            },
+            broadcast=True,
+        )
 
 
 class StickerLocationListView(generics.ListAPIView):
@@ -258,6 +271,14 @@ class MatchAlbumPhotoView(APIView):
             type(user_sticker.user).objects.filter(pk=user_sticker.user_id).update(
                 points=F("points") + reward
             )
+        send_notification(
+            get_friend_ids(request.user.id),
+            {
+                "title": "Captura de amigo",
+                "message": f"{request.user.username} desbloqueó {sticker.name}",
+                "category": "sticker_unlock",
+            },
+        )
 
         serializer = StickerSerializer(
             sticker, context={"request": request, "user": request.user}

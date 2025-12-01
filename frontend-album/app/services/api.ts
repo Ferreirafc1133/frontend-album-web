@@ -178,6 +178,21 @@ export interface ChatMessage {
   created_at: string;
 }
 
+export type NotificationCategory =
+  | "friend_request"
+  | "friend_accept"
+  | "sticker_unlock"
+  | "sticker_new"
+  | "chat_message"
+  | "info";
+
+export interface NotificationEvent {
+  title: string;
+  message: string;
+  category?: NotificationCategory;
+  at?: string;
+}
+
 export interface CreateAlbumPayload {
   title: string;
   description?: string;
