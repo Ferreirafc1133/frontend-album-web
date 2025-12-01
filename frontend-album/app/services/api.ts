@@ -59,6 +59,13 @@ export interface ApiUser {
   is_staff: boolean;
 }
 
+export type RelationshipStatus = "none" | "request_sent" | "request_received" | "friends";
+
+export interface MemberUser extends ApiUser {
+  relationship_status?: RelationshipStatus;
+  friend_request_id?: number | null;
+}
+
 export interface AlbumSummary {
   id: number;
   title: string;
@@ -136,6 +143,15 @@ export interface SocialLoginPayload {
   email: string;
   first_name?: string;
   last_name?: string;
+}
+
+export interface FriendRequest {
+  id: number;
+  from_user: MemberUser;
+  to_user: MemberUser;
+  status: string;
+  created_at: string;
+  responded_at: string | null;
 }
 
 export interface CreateAlbumPayload {
@@ -362,7 +378,39 @@ export const StickersAPI = {
 };
 
 export const FriendsAPI = {
-  async list(limit = 12) {
-    return AuthAPI.leaderboard(limit);
+  async members() {
+    const { data } = await api.get<PaginatedResponse<MemberUser> | MemberUser[]>("/friends/members/");
+    return unwrapList<MemberUser>(data);
+  },
+  async friends() {
+    const { data } = await api.get<PaginatedResponse<MemberUser> | MemberUser[]>("/friends/");
+    return unwrapList<MemberUser>(data);
+  },
+  async requests(scope: "all" | "received" | "sent" = "all", status?: string) {
+    const { data } = await api.get<PaginatedResponse<FriendRequest> | FriendRequest[]>(
+      "/friends/requests/",
+      {
+        params: { scope, status },
+      },
+    );
+    return unwrapList<FriendRequest>(data);
+  },
+  async sendRequest(toUserId: number) {
+    const { data } = await api.post<FriendRequest>("/friends/requests/", { to_user: toUserId });
+    return data;
+  },
+  async acceptRequest(requestId: number) {
+    const { data } = await api.post<FriendRequest>(`/friends/requests/${requestId}/accept/`);
+    return data;
+  },
+  async rejectRequest(requestId: number) {
+    const { data } = await api.post<FriendRequest>(`/friends/requests/${requestId}/reject/`);
+    return data;
+  },
+  async cancelRequest(requestId: number) {
+    await api.post(`/friends/requests/${requestId}/cancel/`);
+  },
+  async removeFriend(requestId: number) {
+    await api.post(`/friends/${requestId}/remove/`);
   },
 };

@@ -59,3 +59,41 @@ class UserSticker(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user} - {self.sticker}"
+
+
+class FriendRequest(models.Model):
+    STATUS_PENDING = "pending"
+    STATUS_ACCEPTED = "accepted"
+    STATUS_REJECTED = "rejected"
+
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending"),
+        (STATUS_ACCEPTED, "Accepted"),
+        (STATUS_REJECTED, "Rejected"),
+    ]
+
+    from_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="friend_requests_sent",
+        on_delete=models.CASCADE,
+    )
+    to_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="friend_requests_received",
+        on_delete=models.CASCADE,
+    )
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    responded_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["from_user", "to_user"],
+                name="unique_friend_request_pair",
+            )
+        ]
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.from_user} -> {self.to_user} ({self.status})"
