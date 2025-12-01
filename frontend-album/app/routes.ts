@@ -25,6 +25,7 @@ export default [
     route("usuarios/:id", "routes/usuarios.$id.tsx"),
     route("mapa", "routes/mapa.tsx"),
     route("chat/:id", "routes/chat.$id.tsx"),
+    route("calendario", "routes/calendario.tsx"),
 
     route("stickers/:sid", "routes/stickers.$sid.tsx"),
   ]),

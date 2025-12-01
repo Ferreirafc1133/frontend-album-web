@@ -178,6 +178,14 @@ export interface ChatMessage {
   created_at: string;
 }
 
+export interface StickerHistoryItem {
+  id: number;
+  sticker_id: number;
+  sticker_name: string;
+  album_title: string;
+  unlocked_at: string | null;
+}
+
 export type NotificationCategory =
   | "friend_request"
   | "friend_accept"
@@ -486,5 +494,14 @@ export const ChatAPI = {
       headers: { "Content-Type": "multipart/form-data" },
     });
     return data;
+  },
+};
+
+export const StickersHistoryAPI = {
+  async list() {
+    const { data } = await api.get<PaginatedResponse<StickerHistoryItem> | StickerHistoryItem[]>(
+      "/captures/history/",
+    );
+    return unwrapList<StickerHistoryItem>(data);
   },
 };

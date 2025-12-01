@@ -52,6 +52,11 @@ export default function Navbar() {
           </NavLink>
         </li>
         <li>
+          <NavLink to="/app/calendario" className={linkClass}>
+            Calendario
+          </NavLink>
+        </li>
+        <li>
           <NavLink to="/app/mapa" className={linkClass}>
             Mapa
           </NavLink>

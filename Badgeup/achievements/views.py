@@ -20,6 +20,7 @@ from .serializers import (
     FriendRequestSerializer,
     MemberWithRelationSerializer,
     StickerUnlockSerializer,
+    UserStickerHistorySerializer,
     UserStickerSerializer,
 )
 from .tasks import validate_user_sticker
@@ -303,3 +304,15 @@ class ChatMessageView(generics.ListCreateAPIView):
             from_user_id__in=[user_id, other_id],
             to_user_id__in=[user_id, other_id],
         ).exists()
+
+
+class UserStickerHistoryView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserStickerHistorySerializer
+
+    def get_queryset(self):
+        return (
+            UserSticker.objects.filter(user=self.request.user, status=UserSticker.STATUS_APPROVED)
+            .select_related("sticker__album")
+            .order_by("-unlocked_at")
+        )

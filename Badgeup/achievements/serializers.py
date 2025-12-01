@@ -127,3 +127,19 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         if not text and not file:
             raise serializers.ValidationError("Envía texto o adjunta un archivo.")
         return attrs
+
+
+class UserStickerHistorySerializer(serializers.ModelSerializer):
+    sticker_id = serializers.IntegerField(source="sticker.id", read_only=True)
+    sticker_name = serializers.CharField(source="sticker.name", read_only=True)
+    album_title = serializers.CharField(source="sticker.album.title", read_only=True)
+
+    class Meta:
+        model = UserSticker
+        fields = (
+            "id",
+            "sticker_id",
+            "sticker_name",
+            "album_title",
+            "unlocked_at",
+        )
