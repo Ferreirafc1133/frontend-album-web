@@ -2,6 +2,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
+from achievements.models import UserSticker
+
 User = get_user_model()
 
 
@@ -26,6 +28,48 @@ class UserSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if not request or not request.user.is_staff:
             validated_data.pop("is_staff", None)
+        return super().update(instance, validated_data)
+
+
+class UserCaptureSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    sticker_id = serializers.IntegerField(source="sticker.id")
+    sticker_name = serializers.CharField(source="sticker.name")
+    album_title = serializers.CharField(source="sticker.album.title")
+    unlocked_at = serializers.DateTimeField()
+    reward_points = serializers.IntegerField(source="sticker.reward_points")
+
+
+class PublicUserProfileSerializer(UserSerializer):
+    stickers_captured = serializers.IntegerField(read_only=True)
+    last_captures = serializers.SerializerMethodField()
+
+    class Meta(UserSerializer.Meta):
+        fields = UserSerializer.Meta.fields + (
+            "stickers_captured",
+            "last_captures",
+        )
+
+    def get_last_captures(self, obj):
+        qs = (
+            obj.user_stickers.filter(status=UserSticker.STATUS_APPROVED)
+            .select_related("sticker__album")
+            .order_by("-unlocked_at")[:5]
+        )
+        return UserCaptureSerializer(qs, many=True).data
+
+
+class AdminUserManageSerializer(UserSerializer):
+    reset_avatar = serializers.BooleanField(write_only=True, required=False)
+
+    class Meta(UserSerializer.Meta):
+        fields = UserSerializer.Meta.fields + ("reset_avatar",)
+        read_only_fields = ("id", "date_joined")
+
+    def update(self, instance, validated_data):
+        reset_avatar = validated_data.pop("reset_avatar", False)
+        if reset_avatar:
+            instance.avatar = None
         return super().update(instance, validated_data)
 
 

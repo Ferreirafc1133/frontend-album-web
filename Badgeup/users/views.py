@@ -9,7 +9,14 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .serializers import RegisterSerializer, UserSerializer
+from achievements.models import UserSticker
+
+from .serializers import (
+    AdminUserManageSerializer,
+    PublicUserProfileSerializer,
+    RegisterSerializer,
+    UserSerializer,
+)
 
 User = get_user_model()
 
@@ -151,3 +158,27 @@ class GoogleCallbackView(APIView):
             f"&refresh={refresh}"
         )
         return redirect(frontend_login_url)
+
+
+class PublicUserProfileView(generics.RetrieveAPIView):
+    serializer_class = PublicUserProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = User.objects.all().prefetch_related("user_stickers")
+
+    def get_object(self):
+        obj = super().get_object()
+        obj.stickers_captured = UserSticker.objects.filter(
+            user=obj, status=UserSticker.STATUS_APPROVED
+        ).count()
+        return obj
+
+
+class AdminUserManageView(generics.UpdateAPIView):
+    serializer_class = AdminUserManageSerializer
+    permission_classes = [permissions.IsAdminUser]
+    queryset = User.objects.all()
+
+
+class AdminUserDeleteView(generics.DestroyAPIView):
+    permission_classes = [permissions.IsAdminUser]
+    queryset = User.objects.all()

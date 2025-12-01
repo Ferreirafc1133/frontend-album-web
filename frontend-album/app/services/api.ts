@@ -154,6 +154,20 @@ export interface FriendRequest {
   responded_at: string | null;
 }
 
+export interface UserCaptureSummary {
+  id: number;
+  sticker_id: number;
+  sticker_name: string;
+  album_title: string;
+  unlocked_at: string;
+  reward_points: number;
+}
+
+export interface UserProfile extends MemberUser {
+  stickers_captured: number;
+  last_captures: UserCaptureSummary[];
+}
+
 export interface CreateAlbumPayload {
   title: string;
   description?: string;
@@ -412,5 +426,19 @@ export const FriendsAPI = {
   },
   async removeFriend(requestId: number) {
     await api.post(`/friends/${requestId}/remove/`);
+  },
+};
+
+export const UsersAPI = {
+  async profile(userId: number | string) {
+    const { data } = await api.get<UserProfile>(`/auth/users/${userId}/`);
+    return data;
+  },
+  async adminUpdate(userId: number | string, payload: Partial<UserProfile> & { reset_avatar?: boolean }) {
+    const { data } = await api.patch<UserProfile>(`/auth/users/${userId}/admin/`, payload);
+    return data;
+  },
+  async adminDelete(userId: number | string) {
+    await api.delete(`/auth/users/${userId}/admin/delete/`);
   },
 };

@@ -22,6 +22,7 @@ export default [
     route("desbloqueo", "routes/desbloqueo.tsx"),
     route("notificaciones", "routes/notificaciones.tsx"),
     route("ranking", "routes/ranking.tsx"),
+    route("usuarios/:id", "routes/usuarios.$id.tsx"),
     route("mapa", "routes/mapa.tsx"),
 
     route("stickers/:sid", "routes/stickers.$sid.tsx"),

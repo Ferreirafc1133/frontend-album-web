@@ -1,5 +1,6 @@
 import type { Route } from "./+types/amigos";
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router";
 import { FriendsAPI, type FriendRequest, type MemberUser, resolveMediaUrl } from "../services/api";
 import { useToast } from "../ui/ToastProvider";
 
@@ -218,7 +219,15 @@ export default function Amigos() {
             <p className="text-xs text-gray-400">{user.email}</p>
           </div>
         </div>
-        <div className="shrink-0">{renderMemberActions(user)}</div>
+        <div className="shrink-0 flex items-center gap-2">
+          <Link
+            to={`/app/usuarios/${user.id}`}
+            className="text-sm bg-white border border-gray-200 text-gray-800 px-3 py-1 rounded-lg hover:bg-gray-50"
+          >
+            Ver perfil
+          </Link>
+          {renderMemberActions(user)}
+        </div>
       </div>
     );
   };
@@ -290,14 +299,22 @@ export default function Amigos() {
           <p className="text-xs text-gray-400">{user.email}</p>
         </div>
       </div>
-      {user.friend_request_id && (
-        <button
-          onClick={() => handleRemoveFriend(user.friend_request_id!)}
-          className="text-sm bg-gray-200 text-gray-700 px-3 py-1 rounded-lg hover:bg-gray-300"
+      <div className="flex items-center gap-2">
+        <Link
+          to={`/app/usuarios/${user.id}`}
+          className="text-sm bg-white border border-gray-200 text-gray-800 px-3 py-1 rounded-lg hover:bg-gray-50"
         >
-          Eliminar amigo
-        </button>
-      )}
+          Ver perfil
+        </Link>
+        {user.friend_request_id && (
+          <button
+            onClick={() => handleRemoveFriend(user.friend_request_id!)}
+            className="text-sm bg-gray-200 text-gray-700 px-3 py-1 rounded-lg hover:bg-gray-300"
+          >
+            Eliminar amigo
+          </button>
+        )}
+      </div>
     </div>
   );
 
