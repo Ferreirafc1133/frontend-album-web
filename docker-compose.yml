@@ -2,6 +2,7 @@ services:
   backend:
     build: ./Badgeup
     container_name: badgeup-backend
+    command: daphne -b 0.0.0.0 -p 8000 badgeup.asgi:application
     env_file:
       - ./Badgeup/.env
     volumes:
@@ -55,6 +56,7 @@ services:
       - /app/node_modules
     environment:
       - VITE_API_URL=http://localhost:8000/api
+      - VITE_WS_URL=ws://localhost:8000
     depends_on:
       - backend
     ports:

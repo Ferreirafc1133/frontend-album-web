@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from users.models import User
 
-from .models import FriendRequest, UserSticker
+from .models import ChatMessage, FriendRequest, UserSticker
 
 
 class UserSummarySerializer(serializers.ModelSerializer):
@@ -92,3 +92,38 @@ class MemberWithRelationSerializer(UserSummarySerializer):
         relationship_map = self.context.get("relationship_map", {})
         rel = relationship_map.get(obj.id) or {}
         return rel.get("request_id")
+
+
+class ChatMessageSerializer(serializers.ModelSerializer):
+    sender_id = serializers.IntegerField(source="sender.id", read_only=True)
+    recipient_id = serializers.IntegerField(source="recipient.id", read_only=True)
+    file_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ChatMessage
+        fields = (
+            "id",
+            "sender_id",
+            "recipient_id",
+            "text",
+            "file",
+            "file_url",
+            "created_at",
+        )
+        read_only_fields = ("id", "sender_id", "recipient_id", "created_at", "file_url")
+
+    def get_file_url(self, obj):
+        request = self.context.get("request")
+        if obj.file and hasattr(obj.file, "url"):
+            url = obj.file.url
+            if request:
+                return request.build_absolute_uri(url)
+            return url
+        return None
+
+    def validate(self, attrs):
+        text = (attrs.get("text") or "").strip()
+        file = attrs.get("file")
+        if not text and not file:
+            raise serializers.ValidationError("Envía texto o adjunta un archivo.")
+        return attrs

@@ -33,8 +33,8 @@ PY
   python manage.py collectstatic --noinput >/dev/null 2>&1 || true
 fi
 
-if [ "$#" -eq 0 ]; then
-  set -- gunicorn badgeup.wsgi:application --bind 0.0.0.0:8000
+if [ "$#" -eq 0 ] || [ "$1" = "gunicorn" ]; then
+  set -- daphne -b 0.0.0.0 -p 8000 badgeup.asgi:application
 fi
 
 echo "Levantando: $*"

@@ -97,3 +97,25 @@ class FriendRequest(models.Model):
 
     def __str__(self) -> str:
         return f"{self.from_user} -> {self.to_user} ({self.status})"
+
+
+class ChatMessage(models.Model):
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="messages_sent",
+        on_delete=models.CASCADE,
+    )
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="messages_received",
+        on_delete=models.CASCADE,
+    )
+    text = models.TextField(blank=True)
+    file = models.FileField(upload_to="chat_files/", null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.sender} -> {self.recipient} ({self.created_at})"

@@ -24,6 +24,7 @@ export default [
     route("ranking", "routes/ranking.tsx"),
     route("usuarios/:id", "routes/usuarios.$id.tsx"),
     route("mapa", "routes/mapa.tsx"),
+    route("chat/:id", "routes/chat.$id.tsx"),
 
     route("stickers/:sid", "routes/stickers.$sid.tsx"),
   ]),

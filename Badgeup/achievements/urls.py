@@ -9,6 +9,7 @@ from .views import (
     FriendsListView,
     MemberListView,
     StickerUnlockView,
+    ChatMessageView,
 )
 
 urlpatterns = [
@@ -36,4 +37,5 @@ urlpatterns = [
         FriendRemoveView.as_view(),
         name="friend-remove",
     ),
+    path("chat/<int:other_id>/", ChatMessageView.as_view(), name="chat-messages"),
 ]

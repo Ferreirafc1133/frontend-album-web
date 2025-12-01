@@ -226,6 +226,12 @@ export default function Amigos() {
           >
             Ver perfil
           </Link>
+          <Link
+            to={`/app/chat/${user.id}`}
+            className="text-sm bg-blue-50 text-blue-700 px-3 py-1 rounded-lg border border-blue-100 hover:bg-blue-100"
+          >
+            Chat
+          </Link>
           {renderMemberActions(user)}
         </div>
       </div>
@@ -305,6 +311,12 @@ export default function Amigos() {
           className="text-sm bg-white border border-gray-200 text-gray-800 px-3 py-1 rounded-lg hover:bg-gray-50"
         >
           Ver perfil
+        </Link>
+        <Link
+          to={`/app/chat/${user.id}`}
+          className="text-sm bg-blue-50 text-blue-700 px-3 py-1 rounded-lg border border-blue-100 hover:bg-blue-100"
+        >
+          Chat
         </Link>
         {user.friend_request_id && (
           <button

@@ -2,6 +2,7 @@ from django.db import models
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, permissions, status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -9,8 +10,13 @@ from albums.models import Sticker
 
 from users.models import User
 
-from .models import FriendRequest, UserSticker
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+
+from .consumers import chat_room_name
+from .models import ChatMessage, FriendRequest, UserSticker
 from .serializers import (
+    ChatMessageSerializer,
     FriendRequestSerializer,
     MemberWithRelationSerializer,
     StickerUnlockSerializer,
@@ -234,3 +240,49 @@ class MemberListView(generics.ListAPIView):
             relationship_map[other.id] = {"status": status_value, "request_id": fr.id}
         ctx["relationship_map"] = relationship_map
         return ctx
+
+
+class ChatMessageView(generics.ListCreateAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ChatMessageSerializer
+
+    def get_queryset(self):
+        other_id = int(self.kwargs["other_id"])
+        user = self.request.user
+        qs = ChatMessage.objects.filter(
+            models.Q(sender=user, recipient_id=other_id)
+            | models.Q(sender_id=other_id, recipient=user)
+        ).select_related("sender", "recipient")
+        limit = int(self.request.query_params.get("limit", 50))
+        return qs.order_by("-created_at")[: max(1, min(limit, 200))]
+
+    def perform_create(self, serializer):
+        other_id = int(self.kwargs["other_id"])
+        user = self.request.user
+        if not self._is_friend(user.id, other_id):
+            raise PermissionDenied("No tienes permiso para chatear con este usuario.")
+        other = get_object_or_404(User, pk=other_id)
+        instance = serializer.save(sender=user, recipient=other)
+        payload = ChatMessageSerializer(instance, context={"request": self.request}).data
+        channel_layer = get_channel_layer()
+        group = chat_room_name(user.id, other_id)
+        async_to_sync(channel_layer.group_send)(group, {"type": "chat.message", "message": payload})
+        async_to_sync(channel_layer.group_send)(
+            f"user_{other_id}",
+            {
+                "type": "notification",
+                "payload": {
+                    "title": "Nuevo mensaje",
+                    "message": f"{user.username}: {(instance.text or '')[:80]}",
+                },
+            },
+        )
+
+    def _is_friend(self, user_id: int, other_id: int) -> bool:
+        if user_id == other_id:
+            return True
+        return FriendRequest.objects.filter(
+            status=FriendRequest.STATUS_ACCEPTED,
+            from_user_id__in=[user_id, other_id],
+            to_user_id__in=[user_id, other_id],
+        ).exists()

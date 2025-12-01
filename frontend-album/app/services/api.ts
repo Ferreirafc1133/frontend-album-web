@@ -168,6 +168,16 @@ export interface UserProfile extends MemberUser {
   last_captures: UserCaptureSummary[];
 }
 
+export interface ChatMessage {
+  id: number;
+  sender_id: number;
+  recipient_id: number;
+  text: string;
+  file?: string | null;
+  file_url?: string | null;
+  created_at: string;
+}
+
 export interface CreateAlbumPayload {
   title: string;
   description?: string;
@@ -440,5 +450,26 @@ export const UsersAPI = {
   },
   async adminDelete(userId: number | string) {
     await api.delete(`/auth/users/${userId}/admin/delete/`);
+  },
+};
+
+export const ChatAPI = {
+  async list(otherId: number | string, limit = 50) {
+    const { data } = await api.get<PaginatedResponse<ChatMessage> | ChatMessage[]>(
+      `/chat/${otherId}/`,
+      {
+        params: { limit },
+      },
+    );
+    return unwrapList<ChatMessage>(data).reverse();
+  },
+  async send(otherId: number | string, payload: { text?: string; file?: File | null }) {
+    const form = new FormData();
+    if (payload.text) form.append("text", payload.text);
+    if (payload.file) form.append("file", payload.file);
+    const { data } = await api.post<ChatMessage>(`/chat/${otherId}/`, form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return data;
   },
 };

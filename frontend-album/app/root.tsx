@@ -7,6 +7,7 @@ import {
   ScrollRestoration,
 } from "react-router";
 import Navbar from "./components/Navbar";
+import { NotificationsSocket } from "./components/NotificationsSocket";
 import { ToastProvider } from "./ui/ToastProvider";
 import { ConfirmProvider } from "./ui/ConfirmProvider";
 
@@ -48,6 +49,7 @@ export default function App() {
   return (
     <ToastProvider>
       <ConfirmProvider>
+        <NotificationsSocket />
         <Navbar />
         <Outlet />
       </ConfirmProvider>
