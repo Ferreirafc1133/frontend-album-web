@@ -37,6 +37,7 @@ export default function Calendario() {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
+  const [selected, setSelected] = useState<CalendarDay | null>(null);
   const { error } = useToast();
 
   useEffect(() => {
@@ -135,6 +136,12 @@ export default function Calendario() {
                 <div
                   key={idx}
                   className={`h-24 rounded-xl border ${isToday ? "border-blue-500 bg-blue-50" : "border-gray-100 bg-gray-50"} p-2 flex flex-col gap-1 overflow-hidden`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => cell.items.length > 0 && setSelected(cell)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && cell.items.length > 0) setSelected(cell);
+                  }}
                 >
                   <div className="text-xs font-semibold text-gray-700">{cell.date.getDate()}</div>
                   <div className="space-y-1 overflow-y-auto">
@@ -149,7 +156,9 @@ export default function Calendario() {
                       </Link>
                     ))}
                     {cell.items.length > 3 && (
-                      <span className="text-[10px] text-gray-500 block">+{cell.items.length - 3} más</span>
+                      <span className="text-[10px] text-blue-600 block font-semibold">
+                        +{cell.items.length - 3} más · ver
+                      </span>
                     )}
                   </div>
                 </div>
@@ -157,6 +166,47 @@ export default function Calendario() {
             })}
           </div>
         </div>
+
+        {selected && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <p className="text-xs text-gray-500">
+                    {selected.date ? selected.date.toLocaleDateString() : ""}
+                  </p>
+                  <h3 className="text-lg font-semibold text-gray-900">Capturas de este día</h3>
+                </div>
+                <button
+                  onClick={() => setSelected(null)}
+                  className="text-gray-500 hover:text-gray-800 text-lg"
+                  aria-label="Cerrar"
+                >
+                  ×
+                </button>
+              </div>
+              {selected.items.length === 0 ? (
+                <p className="text-sm text-gray-500">Sin capturas.</p>
+              ) : (
+                <div className="space-y-2 max-h-80 overflow-y-auto">
+                  {selected.items.map((item) => (
+                    <Link
+                      key={item.id}
+                      to={`/app/stickers/${item.sticker_id}`}
+                      className="block border border-gray-200 rounded-lg px-3 py-2 hover:bg-blue-50"
+                    >
+                      <p className="text-sm font-semibold text-gray-800">{item.sticker_name}</p>
+                      <p className="text-xs text-gray-500">{item.album_title}</p>
+                      <p className="text-[10px] text-gray-400">
+                        {item.unlocked_at ? new Date(item.unlocked_at).toLocaleString() : ""}
+                      </p>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
