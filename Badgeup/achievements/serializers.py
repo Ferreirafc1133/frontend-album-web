@@ -1,5 +1,8 @@
+from django.apps import apps
+from django.db.models import Sum
 from rest_framework import serializers
 
+from albums.models import Sticker
 from users.models import User
 
 from .models import ChatMessage, FriendRequest, UserSticker
@@ -9,6 +12,45 @@ class UserSummarySerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ("id", "username", "first_name", "last_name", "email", "avatar", "points")
+
+
+class MemberSerializer(serializers.ModelSerializer):
+    computed_points = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "avatar",
+            "points",
+            "computed_points",
+        )
+
+    def get_computed_points(self, user):
+        try:
+            sticker_unlock_model = apps.get_model("achievements", "StickerUnlock")
+        except LookupError:
+            sticker_unlock_model = None
+        if sticker_unlock_model:
+            total = (
+                sticker_unlock_model.objects.filter(user=user, status="approved")
+                .aggregate(total=Sum("sticker__reward_points"))
+                .get("total")
+            )
+        else:
+            total = (
+                Sticker.objects.filter(
+                    user_stickers__user=user,
+                    user_stickers__status="approved",
+                )
+                .aggregate(total=Sum("reward_points"))
+                .get("total")
+            )
+        return total or 0
 
 
 class UserStickerSerializer(serializers.ModelSerializer):
@@ -76,12 +118,12 @@ class FriendRequestSerializer(serializers.ModelSerializer):
         )
 
 
-class MemberWithRelationSerializer(UserSummarySerializer):
+class MemberWithRelationSerializer(MemberSerializer):
     relationship_status = serializers.SerializerMethodField()
     friend_request_id = serializers.SerializerMethodField()
 
-    class Meta(UserSummarySerializer.Meta):
-        fields = UserSummarySerializer.Meta.fields + ("relationship_status", "friend_request_id")
+    class Meta(MemberSerializer.Meta):
+        fields = MemberSerializer.Meta.fields + ("relationship_status", "friend_request_id")
 
     def get_relationship_status(self, obj):
         relationship_map = self.context.get("relationship_map", {})

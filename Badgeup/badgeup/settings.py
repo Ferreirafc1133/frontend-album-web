@@ -25,10 +25,12 @@ def env_list(key: str, default: str = "") -> list[str]:
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "change-me-in-production")
 DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() == "true"
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
-CSRF_TRUSTED_ORIGINS = env_list(
-    "DJANGO_CSRF_TRUSTED_ORIGINS",
-    "http://localhost:8000,http://127.0.0.1:8000",
-)
+CSRF_TRUSTED_ORIGINS = [
+    "http://54.161.8.218",
+    "http://98.89.0.40",
+    "http://localhost",
+    "http://127.0.0.1",
+]
 
 
 INSTALLED_APPS = [
@@ -154,10 +156,7 @@ REST_FRAMEWORK = {
 }
 
 
-CORS_ALLOWED_ORIGINS = env_list(
-    "CORS_ALLOWED_ORIGINS",
-    "http://localhost:3000,http://127.0.0.1:3000",
-)
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
 
@@ -185,7 +184,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [os.getenv("REDIS_URL", "redis://redis:6379/0")],
+            "hosts": [("localhost", 6379)],
         },
     },
 }

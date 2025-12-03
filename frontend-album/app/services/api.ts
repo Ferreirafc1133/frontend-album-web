@@ -31,6 +31,12 @@ export function setAPIBaseURL(url: string) {
   api.defaults.baseURL = url;
 }
 
+export function buildWsBase(apiUrl: string) {
+  const url = new URL(apiUrl);
+  const protocol = url.protocol === "https:" ? "wss:" : "ws:";
+  return `${protocol}//${url.hostname}:8000`;
+}
+
 export const resolveMediaUrl = (path?: string | null) => {
   if (!path) return undefined;
   if (path.startsWith("http")) return path;
@@ -55,6 +61,7 @@ export interface ApiUser {
   avatar: string | null;
   bio: string;
   points: number;
+  computed_points?: number;
   date_joined: string;
   is_staff: boolean;
 }

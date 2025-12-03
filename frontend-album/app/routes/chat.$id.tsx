@@ -2,17 +2,9 @@ import type { Route } from "./+types/chat.$id";
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router";
-import { ChatAPI, type ChatMessage, resolveMediaUrl } from "../services/api";
+import { ChatAPI, buildWsBase, type ChatMessage, resolveMediaUrl } from "../services/api";
 import { useUserStore } from "../store/useUserStore";
 import { useToast } from "../ui/ToastProvider";
-
-const wsBase = () => {
-  const envUrl = import.meta.env.VITE_WS_URL as string | undefined;
-  if (envUrl) return envUrl;
-  if (typeof window === "undefined") return "";
-  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${protocol}//${window.location.host}`;
-};
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -35,7 +27,9 @@ export default function ChatPage() {
 
   const wsUrl = useMemo(() => {
     if (!id || !token) return null;
-    const base = wsBase();
+    const base =
+      (import.meta.env.VITE_WS_URL as string | undefined) ||
+      buildWsBase((import.meta.env.VITE_API_URL as string) || "http://localhost:8000/api");
     return `${base}/ws/chat/${id}/?token=${token}`;
   }, [id, token]);
 

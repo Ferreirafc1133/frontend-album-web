@@ -18,6 +18,7 @@ from .models import ChatMessage, FriendRequest, UserSticker
 from .serializers import (
     ChatMessageSerializer,
     FriendRequestSerializer,
+    MemberSerializer,
     MemberWithRelationSerializer,
     StickerUnlockSerializer,
     UserStickerHistorySerializer,
@@ -231,33 +232,13 @@ class FriendsListView(generics.ListAPIView):
         return ctx
 
 
-class MemberListView(generics.ListAPIView):
+class MemberListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = MemberWithRelationSerializer
 
-    def get_queryset(self):
-        return User.objects.exclude(id=self.request.user.id).order_by("-points")
-
-    def get_serializer_context(self):
-        ctx = super().get_serializer_context()
-        user = self.request.user
-        relationships = FriendRequest.objects.filter(
-            status__in=[FriendRequest.STATUS_PENDING, FriendRequest.STATUS_ACCEPTED],
-        ).filter(
-            models.Q(from_user=user) | models.Q(to_user=user),
-        ).select_related("from_user", "to_user")
-        relationship_map = {}
-        for fr in relationships:
-            other = fr.to_user if fr.from_user_id == user.id else fr.from_user
-            if fr.status == FriendRequest.STATUS_ACCEPTED:
-                status_value = "friends"
-            elif fr.from_user_id == user.id:
-                status_value = "request_sent"
-            else:
-                status_value = "request_received"
-            relationship_map[other.id] = {"status": status_value, "request_id": fr.id}
-        ctx["relationship_map"] = relationship_map
-        return ctx
+    def get(self, request):
+        users = User.objects.exclude(id=request.user.id)
+        serializer = MemberSerializer(users, many=True, context={"request": request})
+        return Response(serializer.data)
 
 
 class ChatMessageView(generics.ListCreateAPIView):
