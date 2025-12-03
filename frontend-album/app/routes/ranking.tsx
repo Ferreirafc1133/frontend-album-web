@@ -19,8 +19,9 @@ export default function Ranking() {
     let mounted = true;
     (async () => {
       try {
-        const data = await FriendsAPI.list(50);
-        if (mounted) setLeaders(data);
+        const data = await FriendsAPI.members();
+        const sorted = [...data].sort((a, b) => (b.points ?? 0) - (a.points ?? 0));
+        if (mounted) setLeaders(sorted.slice(0, 50));
       } catch {
         if (mounted) error("No pudimos cargar el ranking.");
       } finally {
@@ -37,28 +38,30 @@ export default function Ranking() {
       <main className="flex-1 p-10">
         <h2 className="text-3xl font-semibold text-gray-800 mb-8 text-center">Ranking Global</h2>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+        <div className="grid md:grid-cols-3 gap-6 mb-12">
           {loading ? (
             <p className="text-gray-500 col-span-3">Cargando...</p>
-          ) : leaders.slice(0, 3).map((user, idx) => (
-            <div key={user.id} className="bg-white rounded-xl shadow-md p-6 flex items-center hover:shadow-lg transition">
-              <span className="text-3xl font-bold text-blue-600 mr-4">#{idx + 1}</span>
-              <img
-                src={resolveMediaUrl(user.avatar) || "https://i.pravatar.cc/100?u=leader"}
-                alt={user.username}
-                className="w-16 h-16 rounded-full border-2 border-blue-200 object-cover"
-              />
-              <div className="ml-4 flex-1">
-                <h3 className="text-lg font-semibold text-gray-800">
+          ) : leaders.slice(0, 3).map((user, idx) => {
+            const podiumColors = ["bg-yellow-100 border-yellow-300", "bg-gray-100 border-gray-300", "bg-orange-100 border-orange-300"];
+            const color = podiumColors[idx] || "bg-white";
+            return (
+              <div
+                key={user.id}
+                className={`rounded-2xl shadow-md p-6 flex flex-col items-center text-center border ${color} hover:shadow-lg transition`}
+              >
+                <div className="text-4xl font-black text-blue-600 mb-3">#{idx + 1}</div>
+                <img
+                  src={resolveMediaUrl(user.avatar) || "https://i.pravatar.cc/100?u=leader"}
+                  alt={user.username}
+                  className="w-20 h-20 rounded-full border-4 border-white shadow"
+                />
+                <h3 className="text-lg font-semibold text-gray-900 mt-3">
                   {user.first_name || user.username} {user.last_name}
                 </h3>
-                <p className="text-sm text-gray-500">{user.points} puntos</p>
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${Math.min(100, user.points)}%` }} />
-                </div>
+                <p className="text-sm text-gray-600">{user.points} puntos</p>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="overflow-x-auto bg-white rounded-xl shadow-md">
