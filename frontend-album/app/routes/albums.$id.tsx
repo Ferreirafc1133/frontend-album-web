@@ -67,6 +67,7 @@ export default function AlbumDetail() {
 
   const { error, success } = useToast();
   const user = useUserStore((s) => s.user);
+  const fetchProfile = useUserStore.getState().fetchProfile;
 
   useEffect(() => {
     let mounted = true;
@@ -213,11 +214,14 @@ export default function AlbumDetail() {
                   lat: pos.coords.latitude,
                   lng: pos.coords.longitude,
                 }),
-              (err) => {
-                console.warn("GEOLOCATION_ERROR", err);
-                resolve(undefined);
+              () => {
+                // fallback usando ipinfo o geolocation-db
+                fetch("https://ipapi.co/json/")
+                  .then((r) => r.json())
+                  .then((j) => resolve({ lat: j.latitude, lng: j.longitude }))
+                  .catch(() => resolve(undefined));
               },
-              { enableHighAccuracy: true, timeout: 8000 },
+              { enableHighAccuracy: true, timeout: 5000 },
             );
           });
         } catch (e) {
@@ -263,6 +267,7 @@ export default function AlbumDetail() {
 
       // nuevo desbloqueo
       success(`Sticker desbloqueado: ${sticker?.name || "Sticker"}`);
+      await fetchProfile();
       setUnlockedSticker(sticker || null);
       setShowUnlockModal(true);
       setUnlockNote("");
