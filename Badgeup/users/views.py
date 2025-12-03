@@ -2,6 +2,8 @@ import requests
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.shortcuts import redirect
+from django.db.models import Q, Sum
+from django.db.models.functions import Coalesce
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -70,7 +72,19 @@ class LeaderboardView(generics.ListAPIView):
     def get_queryset(self):
         limit = int(self.request.query_params.get("limit", 20))
         limit = max(1, min(limit, 100))
-        return User.objects.order_by("-points")[:limit]
+        return (
+            User.objects.annotate(
+                computed_points=Coalesce(
+                    Sum(
+                        "user_stickers__sticker__reward_points",
+                        filter=Q(user_stickers__status=UserSticker.STATUS_APPROVED),
+                    ),
+                    0,
+                )
+            )
+            .order_by("-computed_points")
+            .prefetch_related("user_stickers")[:limit]
+        )
 
 
 class GoogleLoginStartView(APIView):

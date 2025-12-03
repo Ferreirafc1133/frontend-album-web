@@ -1,17 +1,30 @@
-from django.apps import apps
-from django.db.models import Sum
 from rest_framework import serializers
 
-from albums.models import Sticker
 from users.models import User
 
 from .models import ChatMessage, FriendRequest, UserSticker
+from .utils import compute_user_points
 
 
 class UserSummarySerializer(serializers.ModelSerializer):
+
+    computed_points = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ("id", "username", "first_name", "last_name", "email", "avatar", "points")
+        fields = (
+            "id",
+            "username",
+            "first_name",
+            "last_name",
+            "email",
+            "avatar",
+            "points",
+            "computed_points",
+        )
+
+    def get_computed_points(self, user):
+        return compute_user_points(user)
 
 
 class MemberSerializer(serializers.ModelSerializer):
@@ -31,26 +44,7 @@ class MemberSerializer(serializers.ModelSerializer):
         )
 
     def get_computed_points(self, user):
-        try:
-            sticker_unlock_model = apps.get_model("achievements", "StickerUnlock")
-        except LookupError:
-            sticker_unlock_model = None
-        if sticker_unlock_model:
-            total = (
-                sticker_unlock_model.objects.filter(user=user, status="approved")
-                .aggregate(total=Sum("sticker__reward_points"))
-                .get("total")
-            )
-        else:
-            total = (
-                Sticker.objects.filter(
-                    user_stickers__user=user,
-                    user_stickers__status="approved",
-                )
-                .aggregate(total=Sum("reward_points"))
-                .get("total")
-            )
-        return total or 0
+        return compute_user_points(user)
 
 
 class UserStickerSerializer(serializers.ModelSerializer):

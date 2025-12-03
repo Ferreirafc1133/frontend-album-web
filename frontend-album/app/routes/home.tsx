@@ -42,7 +42,7 @@ export default function Home() {
           <div>
             <h2 className="text-3xl font-semibold text-gray-800">Tus Álbumes</h2>
             <p className="text-gray-500">
-              {user ? `${user.first_name || user.username}, tienes ${user.points} puntos acumulados.` : "Revisa tu progreso diario"}
+              {user ? `${user.first_name || user.username}, tienes ${user.computed_points ?? 0} puntos acumulados.` : "Revisa tu progreso diario"}
             </p>
           </div>
           <p className="text-sm text-gray-600">Álbumes disponibles: {albums.length}</p>

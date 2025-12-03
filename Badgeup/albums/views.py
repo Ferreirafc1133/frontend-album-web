@@ -266,11 +266,6 @@ class MatchAlbumPhotoView(APIView):
             ]
         )
 
-        if not created:
-            reward = sticker.reward_points
-            type(user_sticker.user).objects.filter(pk=user_sticker.user_id).update(
-                points=F("points") + reward
-            )
         send_notification(
             get_friend_ids(request.user.id),
             {

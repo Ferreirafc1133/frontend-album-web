@@ -60,8 +60,8 @@ export interface ApiUser {
   last_name: string;
   avatar: string | null;
   bio: string;
-  points: number;
-  computed_points?: number;
+  points?: number;
+  computed_points: number;
   date_joined: string;
   is_staff: boolean;
 }
@@ -233,7 +233,7 @@ export interface UnlockStickerPayload {
 }
 
 export type UpdateProfilePayload = Partial<
-  Omit<ApiUser, "id" | "points" | "date_joined" | "username" | "email">
+  Omit<ApiUser, "id" | "points" | "computed_points" | "date_joined" | "username" | "email">
 > & { avatar?: File | null };
 
 export type MatchPhotoResult = {

@@ -3,11 +3,14 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
 from achievements.models import UserSticker
+from achievements.utils import compute_user_points
 
 User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
+    computed_points = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = (
@@ -19,16 +22,20 @@ class UserSerializer(serializers.ModelSerializer):
             "avatar",
             "bio",
             "points",
+            "computed_points",
             "date_joined",
             "is_staff",
         )
-        read_only_fields = ("id", "points", "date_joined")
+        read_only_fields = ("id", "points", "computed_points", "date_joined")
 
     def update(self, instance, validated_data):
         request = self.context.get("request")
         if not request or not request.user.is_staff:
             validated_data.pop("is_staff", None)
         return super().update(instance, validated_data)
+
+    def get_computed_points(self, obj):
+        return compute_user_points(obj)
 
 
 class UserCaptureSerializer(serializers.Serializer):
@@ -64,7 +71,7 @@ class AdminUserManageSerializer(UserSerializer):
 
     class Meta(UserSerializer.Meta):
         fields = UserSerializer.Meta.fields + ("reset_avatar",)
-        read_only_fields = ("id", "date_joined")
+        read_only_fields = ("id", "date_joined", "computed_points", "points")
 
     def update(self, instance, validated_data):
         reset_avatar = validated_data.pop("reset_avatar", False)

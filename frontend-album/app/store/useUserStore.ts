@@ -25,10 +25,14 @@ const readPersistedAuth = (): StoredAuth => {
     const raw = window.localStorage.getItem("badgeup_auth");
     if (!raw) return { token: null, refreshToken: null, user: null };
     const parsed = JSON.parse(raw);
+    const user = parsed?.user as ApiUser | null;
+    const normalizedUser = user
+      ? { ...user, computed_points: user.computed_points ?? user.points ?? 0 }
+      : null;
     return {
       token: parsed?.token ?? null,
       refreshToken: parsed?.refreshToken ?? null,
-      user: parsed?.user ?? null,
+      user: normalizedUser,
     };
   } catch {
     return { token: null, refreshToken: null, user: null };
@@ -39,7 +43,13 @@ const persistAuth = (payload: StoredAuth | null) => {
   if (!hasWindow) return;
   try {
     if (payload && payload.token) {
-      window.localStorage.setItem("badgeup_auth", JSON.stringify(payload));
+      const normalizedUser = payload.user
+        ? { ...payload.user, computed_points: payload.user.computed_points ?? payload.user.points ?? 0 }
+        : null;
+      window.localStorage.setItem(
+        "badgeup_auth",
+        JSON.stringify({ ...payload, user: normalizedUser }),
+      );
     } else {
       window.localStorage.removeItem("badgeup_auth");
     }
@@ -56,11 +66,14 @@ export const useUserStore = create<State>((set, get) => ({
   refreshToken: initialAuth.refreshToken,
   loadingProfile: false,
   setAuth: (payload) => {
-    persistAuth(payload);
+    const normalizedUser = payload.user
+      ? { ...payload.user, computed_points: payload.user.computed_points ?? payload.user.points ?? 0 }
+      : null;
+    persistAuth({ ...payload, user: normalizedUser });
     set({
       token: payload.token ?? null,
       refreshToken: payload.refreshToken ?? null,
-      user: payload.user ?? null,
+      user: normalizedUser,
     });
   },
   fetchProfile: async () => {
@@ -70,8 +83,11 @@ export const useUserStore = create<State>((set, get) => ({
     try {
       const profile = await AuthAPI.me();
       const stored = readPersistedAuth();
-      persistAuth({ token, refreshToken: stored.refreshToken, user: profile });
-      set({ user: profile, loadingProfile: false });
+      const normalized = profile
+        ? { ...profile, computed_points: profile.computed_points ?? profile.points ?? 0 }
+        : null;
+      persistAuth({ token, refreshToken: stored.refreshToken, user: normalized });
+      set({ user: normalized, loadingProfile: false });
     } catch {
       get().logout();
     } finally {
