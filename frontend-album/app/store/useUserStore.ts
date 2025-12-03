@@ -22,7 +22,7 @@ const hasWindow = typeof globalThis !== "undefined" && typeof globalThis.window 
 const readPersistedAuth = (): StoredAuth => {
   if (!hasWindow) return { token: null, refreshToken: null, user: null };
   try {
-    const raw = window.localStorage.getItem("badgeup_auth");
+    const raw = window.localStorage.getItem("auth");
     if (!raw) return { token: null, refreshToken: null, user: null };
     const parsed = JSON.parse(raw);
     const user = parsed?.user as ApiUser | null;
@@ -46,12 +46,9 @@ const persistAuth = (payload: StoredAuth | null) => {
       const normalizedUser = payload.user
         ? { ...payload.user, computed_points: payload.user.computed_points ?? payload.user.points ?? 0 }
         : null;
-      window.localStorage.setItem(
-        "badgeup_auth",
-        JSON.stringify({ ...payload, user: normalizedUser }),
-      );
+      window.localStorage.setItem("auth", JSON.stringify({ ...payload, user: normalizedUser }));
     } else {
-      window.localStorage.removeItem("badgeup_auth");
+      window.localStorage.removeItem("auth");
     }
   } catch {
     /* ignore */

@@ -61,11 +61,13 @@ export default function Login() {
     console.log("LOGIN_SUBMIT", username);
     try {
       const resp = await AuthAPI.login(username.trim(), password);
+      console.log("LOGIN_RESPONSE", resp);
       setAuth({
         token: resp.access,
         refreshToken: resp.refresh,
         user: resp.user,
       });
+      console.log("TOKEN_GUARDADO", resp.access);
       success("Sesión iniciada");
       console.log("LOGIN_SUCCESS", resp.user?.username);
       navigate("/app", { replace: true });
