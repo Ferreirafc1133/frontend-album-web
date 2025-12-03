@@ -5,6 +5,8 @@ services:
     command: daphne -b 0.0.0.0 -p 8000 badgeup.asgi:application
     env_file:
       - ./Badgeup/.env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
     volumes:
       - ./Badgeup:/app
     ports:
