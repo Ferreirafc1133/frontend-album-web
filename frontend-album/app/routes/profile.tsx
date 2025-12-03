@@ -53,7 +53,7 @@ export default function Profile() {
             <p className="text-sm text-gray-500 mb-3">{roleLabel}</p>
             <div className="flex space-x-8">
               <div>
-                <p className="text-2xl font-bold text-blue-600">{user.computed_points ?? 0}</p>
+                <p className="text-2xl font-bold text-blue-600">{user.points}</p>
                 <p className="text-sm text-gray-500">Puntos acumulados</p>
               </div>
               <div>

@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useUserStore } from "../store/useUserStore";
 import { useToast } from "../ui/ToastProvider";
-import { buildWsBase, type NotificationEvent } from "../services/api";
+import type { NotificationEvent } from "../services/api";
+
+const wsBase = () => {
+  const envUrl = import.meta.env.VITE_WS_URL as string | undefined;
+  if (envUrl) return envUrl;
+  if (typeof window === "undefined") return "";
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return `${protocol}//${window.location.host}`;
+};
 
 export function NotificationsSocket({ onEvent }: { onEvent?: (ev: NotificationEvent) => void }) {
   const token = useUserStore((s) => s.token);
@@ -11,9 +19,7 @@ export function NotificationsSocket({ onEvent }: { onEvent?: (ev: NotificationEv
 
   const wsUrl = useMemo(() => {
     if (!token) return null;
-    const base =
-      (import.meta.env.VITE_WS_URL as string | undefined) ||
-      buildWsBase((import.meta.env.VITE_API_URL as string) || "http://localhost:8000/api");
+    const base = wsBase();
     return `${base}/ws/notifications/?token=${token}`;
   }, [token]);
 

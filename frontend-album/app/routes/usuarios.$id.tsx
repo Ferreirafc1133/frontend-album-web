@@ -113,7 +113,7 @@ export default function UserProfilePage() {
               </div>
               <p className="text-gray-600 text-sm">@{profile.username}</p>
               <div className="flex gap-4 text-sm text-gray-700 mt-2">
-                <span>Pts: {profile.computed_points ?? 0}</span>
+                <span>Pts: {profile.points}</span>
                 <span>Stickers: {profile.stickers_captured}</span>
               </div>
             </div>
@@ -169,6 +169,20 @@ export default function UserProfilePage() {
                 className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 text-sm hover:bg-gray-300 disabled:opacity-50"
               >
                 Reset avatar
+              </button>
+              <button
+                onClick={() => handleAdminUpdate({ points: Math.max(0, profile.points - 100) })}
+                disabled={adminBusy}
+                className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 text-sm hover:bg-gray-300 disabled:opacity-50"
+              >
+                -100 puntos
+              </button>
+              <button
+                onClick={() => handleAdminUpdate({ points: profile.points + 100 })}
+                disabled={adminBusy}
+                className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm hover:bg-green-700 disabled:opacity-50"
+              >
+                +100 puntos
               </button>
               <button
                 onClick={handleDelete}

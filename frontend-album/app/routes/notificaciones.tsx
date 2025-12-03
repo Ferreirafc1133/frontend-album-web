@@ -1,8 +1,16 @@
 import type { Route } from "./+types/notificaciones";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { buildWsBase, type NotificationEvent } from "../services/api";
+import type { NotificationEvent } from "../services/api";
 import { useToast } from "../ui/ToastProvider";
 import { useUserStore } from "../store/useUserStore";
+
+const wsBase = () => {
+  const envUrl = import.meta.env.VITE_WS_URL as string | undefined;
+  if (envUrl) return envUrl;
+  if (typeof window === "undefined") return "";
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return `${protocol}//${window.location.host}`;
+};
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -29,9 +37,7 @@ export default function Notificaciones() {
 
   const wsUrl = useMemo(() => {
     if (!token) return null;
-    const base =
-      (import.meta.env.VITE_WS_URL as string | undefined) ||
-      buildWsBase((import.meta.env.VITE_API_URL as string) || "http://localhost:8000/api");
+    const base = wsBase();
     return `${base}/ws/notifications/?token=${token}`;
   }, [token]);
 

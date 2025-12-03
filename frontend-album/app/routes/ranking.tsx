@@ -20,8 +20,7 @@ export default function Ranking() {
     (async () => {
       try {
         const data = await FriendsAPI.members();
-        const score = (user: ApiUser) => user.computed_points ?? 0;
-        const sorted = [...data].sort((a, b) => score(b) - score(a));
+        const sorted = [...data].sort((a, b) => (b.points ?? 0) - (a.points ?? 0));
         if (mounted) setLeaders(sorted.slice(0, 50));
       } catch {
         if (mounted) error("No pudimos cargar el ranking.");
@@ -59,7 +58,7 @@ export default function Ranking() {
                 <h3 className="text-lg font-semibold text-gray-900 mt-3">
                   {user.first_name || user.username} {user.last_name}
                 </h3>
-                <p className="text-sm text-gray-600">{user.computed_points ?? 0} puntos</p>
+                <p className="text-sm text-gray-600">{user.points} puntos</p>
               </div>
             );
           })}
@@ -81,7 +80,7 @@ export default function Ranking() {
                   <td className="py-3 px-5">{index + 1}</td>
                   <td className="py-3 px-5">{user.username}</td>
                   <td className="py-3 px-5">{user.email}</td>
-                  <td className="py-3 px-5">{user.computed_points ?? 0}</td>
+                  <td className="py-3 px-5">{user.points}</td>
                 </tr>
               ))}
               {!loading && leaders.length === 0 && (

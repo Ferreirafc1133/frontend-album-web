@@ -215,7 +215,7 @@ export default function Amigos() {
               </h3>
               {renderStatusChip(user.relationship_status || "none")}
             </div>
-            <p className="text-sm text-gray-500">{user.computed_points ?? 0} puntos</p>
+            <p className="text-sm text-gray-500">{user.points} puntos</p>
             <p className="text-xs text-gray-400">{user.email}</p>
           </div>
         </div>
@@ -257,7 +257,7 @@ export default function Amigos() {
             <h3 className="text-lg font-semibold text-gray-800">
               {other.first_name || other.username} {other.last_name}
             </h3>
-            <p className="text-sm text-gray-500">{other.computed_points ?? 0} puntos</p>
+            <p className="text-sm text-gray-500">{other.points} puntos</p>
             <p className="text-xs text-gray-400">{other.email}</p>
           </div>
         </div>
@@ -301,7 +301,7 @@ export default function Amigos() {
           <h3 className="text-lg font-semibold text-gray-800">
             {user.first_name || user.username} {user.last_name}
           </h3>
-          <p className="text-sm text-gray-500">{user.computed_points ?? 0} puntos</p>
+          <p className="text-sm text-gray-500">{user.points} puntos</p>
           <p className="text-xs text-gray-400">{user.email}</p>
         </div>
       </div>
