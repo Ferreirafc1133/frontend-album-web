@@ -73,16 +73,7 @@ class LeaderboardView(generics.ListAPIView):
         limit = int(self.request.query_params.get("limit", 20))
         limit = max(1, min(limit, 100))
         return (
-            User.objects.annotate(
-                computed_points=Coalesce(
-                    Sum(
-                        "user_stickers__sticker__reward_points",
-                        filter=Q(user_stickers__status=UserSticker.STATUS_APPROVED),
-                    ),
-                    0,
-                )
-            )
-            .order_by("-computed_points")
+            User.objects.order_by("-points")
             .prefetch_related("user_stickers")[:limit]
         )
 

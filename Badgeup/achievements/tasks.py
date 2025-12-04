@@ -1,6 +1,7 @@
 import logging
 
 from celery import shared_task
+from django.db.models import F
 from django.utils import timezone
 
 from .models import UserSticker
@@ -59,9 +60,14 @@ def validate_user_sticker(self, user_sticker_id: int):
     )
 
     if approved:
+        User = user_sticker.user.__class__
+        User.objects.filter(id=user_sticker.user_id).update(
+            points=F("points") + user_sticker.sticker.reward_points
+        )
         logger.info(
-            "UserSticker %s approved; points now computed dynamically for user %s",
+            "UserSticker %s approved; added %s points to user %s (total will be refreshed)",
             user_sticker_id,
+            user_sticker.sticker.reward_points,
             user_sticker.user_id,
         )
     else:
