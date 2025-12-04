@@ -27,7 +27,7 @@ DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() == "true"
 ALLOWED_HOSTS = ["*",]
 
 CSRF_TRUSTED_ORIGINS = [
-    "http://98.94.3.176",
+    "https://badgeup.duckdns.org",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
 ]

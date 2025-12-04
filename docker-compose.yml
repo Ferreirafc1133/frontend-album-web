@@ -57,8 +57,9 @@ services:
       - ./frontend-album:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://98.94.3.176:8000/api
-      - VITE_WS_URL=ws://98.94.3.176:8000
+      - VITE_API_URL=https://badgeup.duckdns.org/api
+      - VITE_WS_URL=wss://badgeup.duckdns.org
+      - VITE_HOST=0.0.0.0
     depends_on:
       - backend
     ports:
