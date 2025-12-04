@@ -24,13 +24,14 @@ def env_list(key: str, default: str = "") -> list[str]:
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "change-me-in-production")
 DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() == "true"
-ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
+ALLOWED_HOSTS = ["*",]
+
 CSRF_TRUSTED_ORIGINS = [
-    "http://54.161.8.218",
-    "http://98.89.0.40",
-    "http://localhost",
-    "http://127.0.0.1",
+    "http://98.81.141.140",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
 ]
+
 
 
 INSTALLED_APPS = [
