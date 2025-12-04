@@ -36,7 +36,7 @@ PY
 fi
 
 if [ "$#" -eq 0 ] || [ "$1" = "gunicorn" ]; then
-  set -- daphne -b 0.0.0.0 -p 8000 badgeup.asgi:application
+  set -- uvicorn badgeup.asgi:application --host 0.0.0.0 --port 8000 --ws websockets
 fi
 
 echo "Levantando: $*"
