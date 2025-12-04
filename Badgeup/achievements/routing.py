@@ -1,8 +1,8 @@
-from django.urls import re_path
+"""
+Rutas websocket unificadas.
 
-from .consumers import ChatConsumer, NotificationsConsumer
+Se reexportan las rutas de `albums.routing` para que solo exista un origen
+de verdad (chat y notificaciones autenticados por token en querystring).
+"""
 
-websocket_urlpatterns = [
-    re_path(r"^ws/chat/(?P<other_id>\d+)/$", ChatConsumer.as_asgi()),
-    re_path(r"^ws/notifications/$", NotificationsConsumer.as_asgi()),
-]
+from albums.routing import websocket_urlpatterns  # noqa: F401

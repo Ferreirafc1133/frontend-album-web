@@ -1,19 +1,11 @@
 import os
 
 import django
-from channels.auth import AuthMiddlewareStack
-from channels.routing import ProtocolTypeRouter, URLRouter
 from django.core.asgi import get_asgi_application
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "badgeup.settings")
 django.setup()
-import albums.routing  # noqa: E402
+from badgeup.routing import application  # noqa: E402,F401
 
-application = ProtocolTypeRouter(
-    {
-        "http": get_asgi_application(),
-        "websocket": AuthMiddlewareStack(
-            URLRouter(albums.routing.websocket_urlpatterns)
-        ),
-    }
-)
+# Exponer también la aplicación HTTP para compatibilidad con herramientas ASGI.
+http_application = get_asgi_application()
