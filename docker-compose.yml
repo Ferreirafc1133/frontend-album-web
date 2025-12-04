@@ -2,7 +2,7 @@ services:
   backend:
     build: ./Badgeup
     container_name: badgeup-backend
-    command: daphne -b 0.0.0.0 -p 8000 badgeup.asgi:application
+    command: uvicorn badgeup.asgi:application --host 0.0.0.0 --port 8000 --ws websockets
     env_file:
       - ./Badgeup/.env
     environment:
