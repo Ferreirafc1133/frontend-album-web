@@ -1,6 +1,6 @@
 import type { Route } from "./+types/ranking";
 import { useEffect, useState } from "react";
-import { FriendsAPI, type ApiUser, resolveMediaUrl } from "../services/api";
+import { AuthAPI, type ApiUser, resolveMediaUrl } from "../services/api";
 import { useToast } from "../ui/ToastProvider";
 
 export function meta({}: Route.MetaArgs) {
@@ -19,9 +19,8 @@ export default function Ranking() {
     let mounted = true;
     (async () => {
       try {
-        const data = await FriendsAPI.members();
-        const sorted = [...data].sort((a, b) => (b.points ?? 0) - (a.points ?? 0));
-        if (mounted) setLeaders(sorted.slice(0, 50));
+        const data = await AuthAPI.leaderboard(50);
+        if (mounted) setLeaders(data);
       } catch {
         if (mounted) error("No pudimos cargar el ranking.");
       } finally {
