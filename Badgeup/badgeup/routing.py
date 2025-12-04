@@ -2,8 +2,6 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 from django.core.asgi import get_asgi_application
 
 from albums.routing import websocket_urlpatterns as album_websocket_urlpatterns
-from channels.auth import AuthMiddlewareStack
-
 from users.middleware import JWTAuthMiddleware
 
 websocket_urlpatterns = [*album_websocket_urlpatterns]
@@ -11,8 +9,6 @@ websocket_urlpatterns = [*album_websocket_urlpatterns]
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
     "websocket": JWTAuthMiddleware(
-        AuthMiddlewareStack(
-            URLRouter(websocket_urlpatterns)
-        )
+        URLRouter(websocket_urlpatterns)
     ),
 })
